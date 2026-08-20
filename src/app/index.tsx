@@ -1,63 +1,135 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
+import { useEffect, useState, useMemo } from 'react';
+import {
+  ActivityIndicator,
+  Platform,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { getServerHostname } from '@/config/server';
+import { checkServerConnectivity } from '@/lib/api';
+import { ServerStatus } from '@/types';
+import { Spacing, MaxContentWidth } from '@/constants/theme';
 
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
-  return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
-  );
-}
+/**
+ * Initial QueueUp app shell screen.
+ * 
+ * Shows:
+ * - QueueUp title
+ * - Current server hostname
+ * - Server connectivity status
+ * 
+ * This will eventually become the login/signup screen.
+ */
+export default function QueueUpShellScreen() {
+  // Get server hostname once at mount (it's static configuration)
+  const serverHost = useMemo(() => getServerHostname(), []);
+  const [serverStatus, setServerStatus] = useState<ServerStatus>({
+    state: 'checking',
+  });
 
-export default function HomeScreen() {
+  useEffect(() => {
+    // Check server connectivity
+    let isMounted = true;
+
+    async function checkConnectivity() {
+      const result = await checkServerConnectivity();
+      
+      if (!isMounted) return;
+
+      if (result.reachable) {
+        setServerStatus({
+          state: 'reachable',
+          requiresAuth: result.requiresAuth,
+        });
+      } else {
+        setServerStatus({
+          state: 'unreachable',
+          error: result.error || 'Unknown error',
+        });
+      }
+    }
+
+    checkConnectivity();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Format the status display text
+  function getStatusText(): string {
+    switch (serverStatus.state) {
+      case 'checking':
+        return 'Checking...';
+      case 'reachable':
+        if (serverStatus.requiresAuth) {
+          return 'Server reachable (authentication required)';
+        }
+        return 'Server reachable';
+      case 'unreachable':
+        return `Unable to reach server: ${serverStatus.error}`;
+      default:
+        return 'Unknown status';
+    }
+  }
+
+  // Get the status color based on state
+  function getStatusColor() {
+    switch (serverStatus.state) {
+      case 'checking':
+        return '#208AEF';
+      case 'reachable':
+        return '#28a745';
+      case 'unreachable':
+        return '#dc3545';
+      default:
+        return '#6c757d';
+    }
+  }
+
   return (
-    <ThemedView style={styles.container}>
+    <View style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
+        <View style={styles.titleContainer}>
+          <Text style={styles.title}>QueueUp</Text>
+        </View>
 
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
+        <View style={styles.infoSection}>
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Server</Text>
+            <Text style={styles.value} selectable={true}>
+              {serverHost}
+            </Text>
+          </View>
 
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
-          />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Status</Text>
+            <View style={styles.statusContainer}>
+              {serverStatus.state === 'checking' ? (
+                <ActivityIndicator size="small" color={getStatusColor()} />
+              ) : (
+                <Text style={[styles.value, { color: getStatusColor() }]}>
+                  {getStatusText()}
+                </Text>
+              )}
+            </View>
+          </View>
+        </View>
 
-        {Platform.OS === 'web' && <WebBadge />}
+        <View style={styles.buttonPlaceholder} />
+
+        {Platform.OS === 'web' && (
+          <View style={styles.webNote}>
+            <Text style={styles.webNoteText}>
+              Web preview - use Expo Go or development build for native
+            </Text>
+          </View>
+        )}
       </SafeAreaView>
-    </ThemedView>
+    </View>
   );
 }
 
@@ -71,28 +143,59 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: Spacing.four,
     alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
-  },
-  heroSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
     gap: Spacing.four,
+    maxWidth: MaxContentWidth,
+    width: '100%',
+  },
+  titleContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   title: {
+    fontSize: 32,
+    fontWeight: 'bold',
     textAlign: 'center',
+    color: '#208AEF',
   },
-  code: {
-    textTransform: 'uppercase',
-  },
-  stepContainer: {
-    gap: Spacing.three,
+  infoSection: {
     alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
+    gap: Spacing.two,
+    paddingHorizontal: Spacing.two,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: Spacing.two,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  label: {
+    fontSize: 16,
+    color: '#60646C',
+  },
+  value: {
+    fontSize: 16,
+    color: '#000000',
+  },
+  statusContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.one,
+  },
+  buttonPlaceholder: {
+    height: Spacing.six,
+  },
+  webNote: {
+    marginTop: Spacing.four,
+    padding: Spacing.two,
+    backgroundColor: '#F0F0F3',
+    borderRadius: Spacing.one,
+  },
+  webNoteText: {
+    fontSize: 12,
+    color: '#60646C',
+    textAlign: 'center',
   },
 });
