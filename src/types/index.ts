@@ -42,9 +42,13 @@ export class ApiError extends Error {
 
   /**
    * Create an ApiError from a QueueUp error response.
+   * Optionally includes the HTTP status code for context.
    */
-  static fromApiErrorResponse(error: ApiErrorResponse['error']): ApiError {
-    return new ApiError(error.message, error.code);
+  static fromApiErrorResponse(
+    error: ApiErrorResponse['error'],
+    statusCode?: number
+  ): ApiError {
+    return new ApiError(error.message, error.code, statusCode);
   }
 
   /**

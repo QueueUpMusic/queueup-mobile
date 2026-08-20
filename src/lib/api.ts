@@ -33,17 +33,6 @@ function buildUrl(path: string): string {
 }
 
 /**
- * Parse JSON response, handling potential parse errors.
- */
-async function parseJson<T>(response: Response): Promise<T> {
-  try {
-    return await response.json();
-  } catch {
-    throw ApiError.networkError('Invalid JSON response');
-  }
-}
-
-/**
  * Handle API response based on HTTP status and QueueUp envelope.
  */
 async function handleResponse<T>(
@@ -51,48 +40,57 @@ async function handleResponse<T>(
 ): Promise<ApiSuccessResponse<T>> {
   const status = response.status;
 
-  // Network-level failures (no response body or can't parse)
+  // Try to get the response body text first
+  let bodyText: string | null = null;
+  try {
+    bodyText = await response.text();
+  } catch {
+    // Can't read body
+  }
+
+  // Network-level failures (non-2xx response)
   if (!response.ok) {
-    // 401 is an auth failure, but the server is reachable
-    // 404, 500, etc. are server errors
-    
-    // Try to parse the error envelope
-    try {
-      const body = await response.text();
-      if (body) {
-        try {
-          const errorEnvelope = JSON.parse(body) as ApiErrorResponse;
-          if (errorEnvelope.ok === false && errorEnvelope.error) {
-            throw ApiError.fromApiErrorResponse(errorEnvelope.error);
-          }
-        } catch {
-          // Not a QueueUp error envelope, use HTTP status
+    // Try to parse as QueueUp error envelope first
+    if (bodyText) {
+      try {
+        const errorEnvelope = JSON.parse(bodyText) as ApiErrorResponse;
+        if (errorEnvelope.ok === false && errorEnvelope.error) {
+          // Preserve backend error.code, error.message, and HTTP statusCode
+          throw ApiError.fromApiErrorResponse(errorEnvelope.error, status);
         }
+      } catch {
+        // Not valid JSON or not a QueueUp error envelope
       }
-    } catch {
-      // Can't read body, use HTTP status
     }
-    
-    // For 401, we want to distinguish it from other errors
-    // but it still means the server is reachable
+
+    // For 401, preserve the HTTP status distinction
     if (status === 401) {
       throw ApiError.fromHttpStatus(401, 'Authentication required');
     }
-    
+
+    // Generic HTTP error for other non-2xx responses
     throw ApiError.fromHttpStatus(status);
   }
 
-  // Parse and validate the QueueUp success envelope
-  const body = await parseJson<ApiResponse<T>>(response);
-  
-  if (body.ok === true && 'data' in body) {
-    return body;
+  // Success response - parse and validate the QueueUp envelope
+  if (!bodyText) {
+    throw ApiError.networkError('Empty response body');
   }
-  
-  if (body.ok === false && 'error' in body) {
-    throw ApiError.fromApiErrorResponse(body.error);
+
+  try {
+    const body = JSON.parse(bodyText) as ApiResponse<T>;
+    
+    if (body.ok === true && 'data' in body) {
+      return body;
+    }
+    
+    if (body.ok === false && 'error' in body) {
+      throw ApiError.fromApiErrorResponse(body.error, status);
+    }
+  } catch {
+    // Not valid JSON or not a QueueUp envelope
   }
-  
+
   // Unexpected response shape
   throw ApiError.networkError('Invalid API response format');
 }
@@ -180,99 +178,4 @@ export async function checkServerConnectivity(): Promise<{
  */
 export async function getSession(): Promise<SessionResponse> {
   return apiGet<SessionResponse>('session/');
-}
-
-/**
- * POST request to the QueueUp API.
- * Structured for future use - not implemented yet.
- */
-export async function apiPost<T, U = unknown>(
-  path: string,
-  body: U
-): Promise<T> {
-  const url = buildUrl(path);
-  
-  try {
-    const response = await fetch(url, {
-      ...defaultFetchOptions,
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-    });
-    
-    const result = await handleResponse<T>(response);
-    return result.data;
-  } catch (error) {
-    if (error instanceof ApiError) {
-      throw error;
-    }
-    if (error instanceof Error) {
-      throw ApiError.networkError(error.message, error);
-    }
-    throw ApiError.networkError('Unknown API error');
-  }
-}
-
-/**
- * PATCH request to the QueueUp API.
- * Structured for future use - not implemented yet.
- */
-export async function apiPatch<T, U = unknown>(
-  path: string,
-  body: U
-): Promise<T> {
-  const url = buildUrl(path);
-  
-  try {
-    const response = await fetch(url, {
-      ...defaultFetchOptions,
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-    });
-    
-    const result = await handleResponse<T>(response);
-    return result.data;
-  } catch (error) {
-    if (error instanceof ApiError) {
-      throw error;
-    }
-    if (error instanceof Error) {
-      throw ApiError.networkError(error.message, error);
-    }
-    throw ApiError.networkError('Unknown API error');
-  }
-}
-
-/**
- * DELETE request to the QueueUp API.
- * Structured for future use - not implemented yet.
- */
-export async function apiDelete<T>(path: string): Promise<T> {
-  const url = buildUrl(path);
-  
-  try {
-    const response = await fetch(url, {
-      ...defaultFetchOptions,
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-    
-    const result = await handleResponse<T>(response);
-    return result.data;
-  } catch (error) {
-    if (error instanceof ApiError) {
-      throw error;
-    }
-    if (error instanceof Error) {
-      throw ApiError.networkError(error.message, error);
-    }
-    throw ApiError.networkError('Unknown API error');
-  }
 }
