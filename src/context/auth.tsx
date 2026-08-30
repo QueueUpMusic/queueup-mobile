@@ -15,7 +15,7 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 function isApproved(session: SessionResponse): boolean {
-  return session.user.approved;
+  return session.user.approved || session.user.is_staff || session.user.is_superuser;
 }
 
 export function AuthProvider({ children }: PropsWithChildren) {
@@ -81,21 +81,23 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
   const signup = useCallback(async (payload: Parameters<typeof apiSignup>[0]) => {
     await getCsrfToken();
-    await apiSignup(payload);
-    await getCsrfToken();
-    await refresh();
-  }, [refresh]);
+    const session = await apiSignup(payload);
+    applySession(session);
+
+    // Django rotates its CSRF token after authentication. Account creation has
+    // already succeeded, so refresh the token without turning a transient
+    // follow-up failure into a signup failure.
+    clearCsrfToken();
+    void getCsrfToken().catch(() => clearCsrfToken());
+  }, [applySession]);
 
   const logout = useCallback(async () => {
     authGeneration.current += 1;
-    try {
-      await getCsrfToken();
-      await apiLogout();
-    } finally {
-      clearCsrfToken();
-      setUser(null);
-      setStatus('logged_out');
-    }
+    await getCsrfToken();
+    await apiLogout();
+    clearCsrfToken();
+    setUser(null);
+    setStatus('logged_out');
   }, []);
 
   const value = useMemo(() => ({ status, user, error, refresh, login, signup, logout }), [status, user, error, refresh, login, signup, logout]);
