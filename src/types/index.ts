@@ -19,6 +19,43 @@ export interface ApiErrorResponse {
     code: string;
     message: string;
   };
+  errors?: Record<string, string[] | { message: string; code?: string }[] | string>;
+}
+
+export interface CsrfResponse {
+  csrf_token: string;
+}
+
+export interface LoginPayload {
+  username: string;
+  password: string;
+}
+
+export interface SignupPayload {
+  display_name: string;
+  username: string;
+  email: string;
+  password: string;
+  password_confirm: string;
+  agree_to_terms: boolean;
+}
+
+export interface OnboardingResponse {
+  season_welcome: { season_id: number; name: string; acknowledged: boolean } | null;
+  voting_guide_seen: boolean;
+  submission_rules_accepted: boolean;
+}
+
+/** User data returned by the session endpoint. Extra backend fields are preserved. */
+export interface SessionUser {
+  id: number;
+  username: string;
+  display_name: string;
+  email: string;
+  approved: boolean;
+  is_staff: boolean;
+  is_superuser: boolean;
+  [key: string]: unknown;
 }
 
 /**
@@ -34,7 +71,8 @@ export class ApiError extends Error {
     public readonly message: string,
     public readonly code: string,
     public readonly statusCode?: number,
-    public readonly isNetworkError: boolean = false
+    public readonly isNetworkError: boolean = false,
+    public readonly fieldErrors?: Record<string, string[]>
   ) {
     super(message);
     this.name = 'ApiError';
@@ -46,9 +84,13 @@ export class ApiError extends Error {
    */
   static fromApiErrorResponse(
     error: ApiErrorResponse['error'],
-    statusCode?: number
+    statusCode?: number,
+    fieldErrors?: ApiErrorResponse['errors']
   ): ApiError {
-    return new ApiError(error.message, error.code, statusCode);
+    const normalizedErrors = fieldErrors
+      ? Object.fromEntries(Object.entries(fieldErrors).map(([field, messages]) => [field, (Array.isArray(messages) ? messages : [messages]).map((message) => typeof message === 'string' ? message : message.message)]))
+      : undefined;
+    return new ApiError(error.message, error.code, statusCode, false, normalizedErrors);
   }
 
   /**
@@ -83,11 +125,11 @@ export class ApiError extends Error {
  * This is a minimal type for the connectivity probe.
  */
 export interface SessionResponse {
-  // The session endpoint returns different data based on auth state
-  // We only need to know if it succeeded (200) or requires auth (401)
-  // The actual data structure may vary, so we keep it generic for now
-  [key: string]: unknown;
+  authenticated: true;
+  user: SessionUser;
 }
+
+export type AuthStatus = 'booting' | 'logged_out' | 'pending' | 'approved' | 'network_error';
 
 /**
  * Server connectivity status.

@@ -5,12 +5,17 @@
  * Components should never manually prepend server URLs.
  */
 
-import { getApiBaseUrl } from '@/config/server';
+import { getApiBaseUrl, getCurrentServer } from '@/config/server';
+import { Platform } from 'react-native';
 import {
   ApiError,
   ApiErrorResponse,
   ApiResponse,
   ApiSuccessResponse,
+  CsrfResponse,
+  LoginPayload,
+  OnboardingResponse,
+  SignupPayload,
   SessionResponse,
 } from '@/types';
 
@@ -56,9 +61,10 @@ async function handleResponse<T>(
         const errorEnvelope = JSON.parse(bodyText) as ApiErrorResponse;
         if (errorEnvelope.ok === false && errorEnvelope.error) {
           // Preserve backend error.code, error.message, and HTTP statusCode
-          throw ApiError.fromApiErrorResponse(errorEnvelope.error, status);
+          throw ApiError.fromApiErrorResponse(errorEnvelope.error, status, errorEnvelope.errors);
         }
-      } catch {
+      } catch (error) {
+        if (error instanceof ApiError) throw error;
         // Not valid JSON or not a QueueUp error envelope
       }
     }
@@ -85,9 +91,10 @@ async function handleResponse<T>(
     }
     
     if (body.ok === false && 'error' in body) {
-      throw ApiError.fromApiErrorResponse(body.error, status);
+      throw ApiError.fromApiErrorResponse(body.error, status, body.errors);
     }
-  } catch {
+  } catch (error) {
+    if (error instanceof ApiError) throw error;
     // Not valid JSON or not a QueueUp envelope
   }
 
@@ -105,9 +112,6 @@ export async function apiGet<T>(path: string): Promise<T> {
     const response = await fetch(url, {
       ...defaultFetchOptions,
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
     });
     
     const result = await handleResponse<T>(response);
@@ -143,9 +147,6 @@ export async function checkServerConnectivity(): Promise<{
     const response = await fetch(url, {
       ...defaultFetchOptions,
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
     });
     
     // Server responded - it's reachable
@@ -178,4 +179,59 @@ export async function checkServerConnectivity(): Promise<{
  */
 export async function getSession(): Promise<SessionResponse> {
   return apiGet<SessionResponse>('session/');
+}
+
+export async function getOnboarding(): Promise<OnboardingResponse> {
+  return apiGet<OnboardingResponse>('onboarding/');
+}
+
+let csrfToken: string | null = null;
+
+export function clearCsrfToken(): void {
+  csrfToken = null;
+}
+
+export async function getCsrfToken(): Promise<string> {
+  const result = await apiGet<CsrfResponse>('auth/csrf/');
+  if (!result.csrf_token) throw ApiError.networkError('CSRF endpoint did not return a token');
+  csrfToken = result.csrf_token;
+  return csrfToken;
+}
+
+async function ensureCsrfToken(): Promise<string> {
+  return csrfToken ?? getCsrfToken();
+}
+
+export async function apiMutation<T, U = unknown>(path: string, method: 'POST' | 'PATCH' | 'DELETE', body?: U): Promise<T> {
+  const token = await ensureCsrfToken();
+  try {
+    const response = await fetch(buildUrl(path), {
+      ...defaultFetchOptions,
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': token,
+        // Django requires a same-origin check for HTTPS CSRF-protected requests.
+        // Native fetch does not supply the browser Origin header automatically.
+        ...(Platform.OS === 'web' ? {} : { Origin: getCurrentServer() }),
+      },
+      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+    });
+    return (await handleResponse<T>(response)).data;
+  } catch (error) {
+    if (error instanceof ApiError) throw error;
+    throw ApiError.networkError(error instanceof Error ? error.message : 'Unknown API error');
+  }
+}
+
+export function login(payload: LoginPayload): Promise<SessionResponse> {
+  return apiMutation<SessionResponse>('auth/login/', 'POST', payload);
+}
+
+export function signup(payload: SignupPayload): Promise<SessionResponse> {
+  return apiMutation<SessionResponse>('auth/signup/', 'POST', payload);
+}
+
+export function logout(): Promise<unknown> {
+  return apiMutation('auth/logout/', 'POST');
 }
