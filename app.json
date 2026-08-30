@@ -4,29 +4,28 @@
     "slug": "queueup-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/queueup-icon.png",
     "scheme": "queueupmobile",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "dark",
 
     "ios": {
-      "icon": "./assets/expo.icon",
+      "icon": "./assets/images/queueup-icon.png",
       "bundleIdentifier": "com.queueupmusic.queueup"
     },
 
     "android": {
       "package": "com.queueupmusic.queueup",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "backgroundColor": "#07100c",
+        "foregroundImage": "./assets/images/queueup-icon.png",
+        "monochromeImage": "./assets/images/queueup-icon.png"
       },
       "predictiveBackGestureEnabled": false
     },
 
     "web": {
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/queueup-icon.png"
     },
 
     "plugins": [
@@ -34,9 +33,10 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 76
+          "backgroundColor": "#07100c",
+          "image": "./assets/images/queueup-logo.png",
+          "imageWidth": 144,
+          "resizeMode": "contain"
         }
       ]
     ],
