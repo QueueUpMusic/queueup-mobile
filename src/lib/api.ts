@@ -13,6 +13,7 @@ import {
   ApiResponse,
   ApiSuccessResponse,
   CsrfResponse,
+  DashboardResponse,
   LoginPayload,
   OnboardingResponse,
   SignupPayload,
@@ -183,6 +184,10 @@ export async function getSession(): Promise<SessionResponse> {
 
 export async function getOnboarding(): Promise<OnboardingResponse> {
   return apiGet<OnboardingResponse>('onboarding/');
+}
+
+export async function getDashboard(): Promise<DashboardResponse> {
+  return apiGet<DashboardResponse>('dashboard/');
 }
 
 let csrfToken: string | null = null;

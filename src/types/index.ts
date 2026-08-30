@@ -46,6 +46,50 @@ export interface OnboardingResponse {
   submission_rules_accepted: boolean;
 }
 
+export interface SeasonSummary {
+  id: number;
+  name: string;
+  description: string;
+  starts_at: string | null;
+  ends_at: string | null;
+  active: boolean;
+  banner_url: string | null;
+}
+
+export interface RoundSummary {
+  id: number;
+  season: SeasonSummary;
+  prompt: string;
+  details: string;
+  state: string;
+  submission_opens: string;
+  submission_deadline: string;
+  voting_deadline: string;
+  reveal_at: string;
+  archived: boolean;
+  submission_count: number;
+  playlist_url?: string | null;
+}
+
+export interface SubmissionTrack {
+  id: number;
+  spotify_track_id: string;
+  spotify_uri: string;
+  spotify_url: string;
+  title: string;
+  artist: string;
+  album: string;
+  album_art_url: string | null;
+  preview_url: string | null;
+}
+
+export interface DashboardResponse {
+  cards: { kind: 'current' | 'results'; round: RoundSummary }[];
+  current_round: RoundSummary | null;
+  results_round: RoundSummary | null;
+  my_submission: SubmissionTrack | null;
+}
+
 /** User data returned by the session endpoint. Extra backend fields are preserved. */
 export interface SessionUser {
   id: number;

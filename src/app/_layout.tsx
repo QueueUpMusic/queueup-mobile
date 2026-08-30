@@ -31,6 +31,7 @@ function AuthStack() {
     </Stack.Protected>
     <Stack.Protected guard={status === 'approved'}>
       <Stack.Screen name="(app)" />
+      <Stack.Screen name="round/[id]" />
     </Stack.Protected>
   </Stack>;
 }

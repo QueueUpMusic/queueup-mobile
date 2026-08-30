@@ -9,7 +9,7 @@ export function AuthFrame({ children }: PropsWithChildren) {
   return <SafeAreaView style={styles.safe} edges={['top', 'bottom']}><View style={styles.content}>{children}</View></SafeAreaView>;
 }
 
-export function Brand() { return <View style={styles.brandRow}><Image accessibilityLabel="QueueUp logo" source={logo} style={styles.logo} /><Text style={styles.brand}>QueueUp</Text></View>; }
+export function Brand({ compact = false }: { compact?: boolean }) { return <View style={[styles.brandRow, compact && styles.compactBrandRow]}><Image accessibilityLabel="QueueUp logo" source={logo} style={styles.logo} /><Text style={styles.brand}>QueueUp</Text></View>; }
 
 export function Field({ label, ...props }: TextInputProps & { label: string }) {
   return <View style={styles.field}><Text style={styles.label}>{label}</Text><TextInput {...props} accessibilityLabel={label} placeholderTextColor={colors.textMuted} selectionColor={colors.brand} style={styles.input} /></View>;
@@ -25,6 +25,7 @@ export const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   content: { flex: 1, width: '100%', maxWidth: 560, alignSelf: 'center', paddingHorizontal: Spacing.xl, paddingVertical: Spacing.xxl, justifyContent: 'center' },
   brandRow: { alignItems: 'center', flexDirection: 'row', gap: Spacing.md, marginBottom: Spacing.xxl },
+  compactBrandRow: { marginBottom: 0 },
   logo: { width: 48, height: 48, borderRadius: Radii.small },
   brand: { color: colors.text, fontSize: 27, fontWeight: '800', letterSpacing: -0.8 },
   heading: { color: colors.text, fontSize: 32, lineHeight: 38, fontWeight: '800', letterSpacing: -0.8, marginBottom: Spacing.sm },
