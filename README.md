@@ -43,6 +43,14 @@ This command will move the starter code to the **app-example** directory and cre
 
 ## Learn more
 
+## Native authentication notes
+
+The mobile app uses QueueUp's Django session cookie and keeps the CSRF token in
+memory. Cookie persistence across app restarts is not guaranteed by this code
+and must be physically validated in an Expo development build on iOS and
+Android. The web preview may also be blocked by backend CORS or SameSite rules;
+that does not change the native target or production backend security settings.
+
 To learn more about developing your project with Expo, look at the following resources:
 
 - [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
