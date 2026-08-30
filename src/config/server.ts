@@ -57,6 +57,20 @@ export function getApiBaseUrl(): string {
 }
 
 /**
+ * Resolve a server-provided URL. API payloads may contain either an absolute
+ * media URL or a path relative to the currently selected QueueUp server.
+ */
+export function resolveServerUrl(value: string | null): string | null {
+  if (!value) return null;
+
+  try {
+    return new URL(value, getCurrentServer()).toString();
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Get the current server hostname without protocol for display purposes.
  */
 export function getServerHostname(): string {

@@ -56,18 +56,25 @@ export interface SeasonSummary {
   banner_url: string | null;
 }
 
+export interface RoundHostSummary {
+  display_name: string;
+  picture_url: string | null;
+}
+
 export interface RoundSummary {
   id: number;
   season: SeasonSummary;
   prompt: string;
   details: string;
   state: string;
-  submission_opens: string;
-  submission_deadline: string;
-  voting_deadline: string;
-  reveal_at: string;
+  submission_opens: string | null;
+  submission_deadline: string | null;
+  voting_deadline: string | null;
+  reveal_at: string | null;
   archived: boolean;
   submission_count: number;
+  rating_count: number;
+  host: RoundHostSummary | null;
   playlist_url?: string | null;
 }
 
@@ -81,6 +88,39 @@ export interface SubmissionTrack {
   album: string;
   album_art_url: string | null;
   preview_url: string | null;
+}
+
+export interface RoundBallot {
+  saved_scores: Record<string, number>;
+  eligible_count: number;
+  voted_count: number;
+  complete: boolean;
+  no_votable_songs: boolean;
+  eligible_submissions?: SubmissionTrack[];
+}
+
+export interface UserSummary {
+  id: number;
+  username: string;
+  display_name: string;
+  picture_url: string | null;
+}
+
+export interface RevealedSubmission extends SubmissionTrack {
+  submitter: UserSummary;
+  average_score: number;
+  vote_count: number;
+  place?: number;
+  tied?: boolean;
+  place_label?: string;
+}
+
+export interface RoundDetailResponse {
+  round: RoundSummary;
+  my_submission: SubmissionTrack | null;
+  ballot: RoundBallot;
+  show_voting_guide: boolean;
+  results?: RevealedSubmission[];
 }
 
 export interface DashboardResponse {

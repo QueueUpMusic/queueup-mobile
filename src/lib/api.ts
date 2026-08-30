@@ -16,6 +16,7 @@ import {
   DashboardResponse,
   LoginPayload,
   OnboardingResponse,
+  RoundDetailResponse,
   SignupPayload,
   SessionResponse,
 } from '@/types';
@@ -188,6 +189,10 @@ export async function getOnboarding(): Promise<OnboardingResponse> {
 
 export async function getDashboard(): Promise<DashboardResponse> {
   return apiGet<DashboardResponse>('dashboard/');
+}
+
+export async function getRoundDetail(roundId: number): Promise<RoundDetailResponse> {
+  return apiGet<RoundDetailResponse>(`rounds/${roundId}/`);
 }
 
 let csrfToken: string | null = null;
