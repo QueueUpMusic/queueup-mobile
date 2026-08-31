@@ -127,6 +127,16 @@ export interface RoundBallot {
   eligible_submissions?: SubmissionTrack[];
 }
 
+export interface VoteMutationResponse {
+  vote: {
+    id: number;
+    submission_id: number;
+    score: number;
+    created: boolean;
+  };
+  ballot: RoundBallot;
+}
+
 export interface UserSummary {
   id: number;
   username: string;

@@ -66,6 +66,12 @@ export function PauseIcon({ color, size = 18 }: { color: ColorValue; size?: numb
   return <Svg accessibilityLabel="Pause preview" fill={color} height={size} viewBox="0 0 24 24" width={size}><Path d="M7 5h3v14H7zM14 5h3v14h-3z" /></Svg>;
 }
 
+export function StarIcon({ color, filled = false, size = 30 }: { color: ColorValue; filled?: boolean; size?: number }) {
+  return <Svg accessibilityLabel={filled ? 'Rated star' : 'Unrated star'} fill={filled ? color : 'none'} height={size} viewBox="0 0 24 24" width={size}>
+    <Path d="m12 3 2.78 5.63 6.22.9-4.5 4.39 1.06 6.2L12 17.2l-5.56 2.92 1.06-6.2L3 9.53l6.22-.9L12 3Z" stroke={color} strokeLinejoin="round" strokeWidth={1.7} />
+  </Svg>;
+}
+
 export function SettingsIcon({ color, size = 22 }: { color: ColorValue; size?: number }) {
   return <Svg accessibilityLabel="Settings" fill="none" height={size} viewBox="0 0 24 24" width={size}>
     <Path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z" stroke={color} strokeWidth={1.8} />

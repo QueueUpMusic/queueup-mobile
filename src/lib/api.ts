@@ -26,6 +26,8 @@ import {
   SpotifySearchResponse,
   SubmissionStatusResponse,
   SubmissionTrack,
+  RoundBallot,
+  VoteMutationResponse,
 } from '@/types';
 
 /**
@@ -218,6 +220,14 @@ export async function getProfile(username: string, seasonId?: number): Promise<P
 
 export async function getRoundDetail(roundId: number): Promise<RoundDetailResponse> {
   return apiGet<RoundDetailResponse>(`rounds/${roundId}/`);
+}
+
+export async function getBallot(roundId: number): Promise<RoundBallot & { round_id: number }> {
+  return apiGet<RoundBallot & { round_id: number }>(`rounds/${roundId}/ballot/`);
+}
+
+export function saveVote(roundId: number, submissionId: number, score: number): Promise<VoteMutationResponse> {
+  return apiMutation<VoteMutationResponse>(`rounds/${roundId}/votes/${submissionId}/`, 'POST', { score });
 }
 
 export async function searchSpotify(query: string, roundId: number): Promise<SpotifySearchResponse> {

@@ -33,6 +33,8 @@ function AuthStack() {
       <Stack.Screen name="(app)" />
       <Stack.Screen name="round/[id]" />
       <Stack.Screen name="round/[id]/submit" options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen name="round/[id]/vote" options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen name="round/[id]/vote/complete" options={{ animation: 'fade' }} />
       <Stack.Screen name="profile" options={{ animation: 'slide_from_right' }} />
       <Stack.Screen name="settings" />
     </Stack.Protected>
