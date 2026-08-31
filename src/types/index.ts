@@ -154,6 +154,43 @@ export interface LeaderboardResponse {
   leaderboard: LeaderboardEntry[];
 }
 
+export interface ProfileMetrics {
+  wins: number;
+  podiums: number;
+  round_count: number;
+  average_received: number;
+  average_placement: number;
+  win_rate: number;
+}
+
+export interface ProfileBadge {
+  key: string;
+  name: string;
+  description: string;
+  icon: string;
+  earned: boolean;
+  hidden: boolean;
+}
+
+export interface ProfilePrestigeBadge {
+  id: number;
+  name: string;
+  description: string;
+  icon: string;
+}
+
+export interface ProfileResponse {
+  player: UserSummary;
+  metrics: ProfileMetrics;
+  favorite_genres: [string, number][];
+  most_submitted_artists: [string, number][];
+  history: RevealedSubmission[];
+  season: SeasonSummary | null;
+  seasons: SeasonSummary[];
+  badges: ProfileBadge[];
+  prestige_badges: ProfilePrestigeBadge[];
+}
+
 /** User data returned by the session endpoint. Extra backend fields are preserved. */
 export interface SessionUser {
   id: number;

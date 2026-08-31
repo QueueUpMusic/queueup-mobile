@@ -43,3 +43,16 @@ export function Checkmark({ color, size = 18 }: { color: ColorValue; size?: numb
     <Path d="m5 12 4 4L19 6" stroke={color} strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.4} />
   </Svg>;
 }
+
+export function SettingsIcon({ color, size = 22 }: { color: ColorValue; size?: number }) {
+  return <Svg accessibilityLabel="Settings" fill="none" height={size} viewBox="0 0 24 24" width={size}>
+    <Path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z" stroke={color} strokeWidth={1.8} />
+    <Path d="m19.1 13.4 1.3 1-.1.3-1.4 2.4-.3-.1-1.6-.5a7.7 7.7 0 0 1-1.5.9l-.3 1.7h-2.8l-.3-1.7a7.7 7.7 0 0 1-1.5-.9l-1.6.5-.3.1-1.4-2.4-.1-.3 1.3-1a7.8 7.8 0 0 1 0-1.8l-1.3-1 .1-.3 1.4-2.4.3.1 1.6.5a7.7 7.7 0 0 1 1.5-.9l.3-1.7h2.8l.3 1.7a7.7 7.7 0 0 1 1.5.9l1.6-.5.3.1 1.4 2.4.1.3-1.3 1a7.8 7.8 0 0 1 0 1.8Z" stroke={color} strokeLinejoin="round" strokeWidth={1.5} />
+  </Svg>;
+}
+
+export function LogOutIcon({ color, size = 22 }: { color: ColorValue; size?: number }) {
+  return <Svg accessibilityLabel="Log out" fill="none" height={size} viewBox="0 0 24 24" width={size}>
+    <Path d="M10 17l5-5-5-5M15 12H3M14 3h7v18h-7" stroke={color} strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} />
+  </Svg>;
+}

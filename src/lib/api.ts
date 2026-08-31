@@ -18,6 +18,7 @@ import {
   LeaderboardResponse,
   LoginPayload,
   OnboardingResponse,
+  ProfileResponse,
   RoundDetailResponse,
   SeasonsResponse,
   SignupPayload,
@@ -205,6 +206,11 @@ export async function getArchive(): Promise<ArchiveResponse> {
 export async function getLeaderboard(seasonId?: number): Promise<LeaderboardResponse> {
   const query = seasonId === undefined ? '' : `?season=${encodeURIComponent(seasonId)}`;
   return apiGet<LeaderboardResponse>(`leaderboard/${query}`);
+}
+
+export async function getProfile(username: string, seasonId?: number): Promise<ProfileResponse> {
+  const query = seasonId === undefined ? '' : `?season=${encodeURIComponent(seasonId)}`;
+  return apiGet<ProfileResponse>(`profiles/${encodeURIComponent(username)}/${query}`);
 }
 
 export async function getRoundDetail(roundId: number): Promise<RoundDetailResponse> {

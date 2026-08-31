@@ -7,6 +7,5 @@ export default function PlayerTabsLayout() {
     <Tabs.Screen name="index" options={{ title: 'Home', tabBarIcon: ({ color }) => <QueueUpIcon color={color} name="home" /> }} />
     <Tabs.Screen name="archive" options={{ title: 'Archive', tabBarIcon: ({ color }) => <QueueUpIcon color={color} name="archive" /> }} />
     <Tabs.Screen name="rankings" options={{ title: 'Ranks', tabBarIcon: ({ color }) => <QueueUpIcon color={color} name="rankings" /> }} />
-    <Tabs.Screen name="profile" options={{ title: 'Profile', tabBarIcon: ({ color }) => <QueueUpIcon color={color} name="profile" /> }} />
   </Tabs>;
 }
