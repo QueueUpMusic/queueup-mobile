@@ -138,6 +138,22 @@ export interface ArchiveResponse {
   rounds: RoundSummary[];
 }
 
+export interface LeaderboardEntry {
+  place: number;
+  tied: boolean;
+  player: UserSummary;
+  vote_score: number;
+  submission_bonus: number;
+  rounds_played: number;
+  total_score: number;
+}
+
+export interface LeaderboardResponse {
+  season: SeasonSummary | null;
+  seasons: SeasonSummary[];
+  leaderboard: LeaderboardEntry[];
+}
+
 /** User data returned by the session endpoint. Extra backend fields are preserved. */
 export interface SessionUser {
   id: number;
