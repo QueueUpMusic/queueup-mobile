@@ -1,6 +1,6 @@
-import { PropsWithChildren, ReactNode } from 'react';
+import { PropsWithChildren, ReactNode, useCallback, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Brand } from '@/components/auth-ui';
 import { PlayerAvatar } from '@/components/player-avatar';
@@ -13,11 +13,17 @@ type PlayerHeaderProps = PropsWithChildren<{ leftAction?: ReactNode; rightAction
 export function PlayerHeader({ leftAction, rightAction, showAvatar = true }: PlayerHeaderProps) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { user } = useAuth();
+  const { profilePictureUrl, user } = useAuth();
+  const [profileOpening, setProfileOpening] = useState(false);
+  useFocusEffect(useCallback(() => {
+    setProfileOpening(false);
+  }, []));
+  const displayLeftAction = profileOpening ? <View style={styles.slot} /> : leftAction;
+  const displayRightAction = rightAction ?? (showAvatar && !profileOpening && user ? <Pressable accessibilityHint="Opens your profile" accessibilityLabel="Open profile" accessibilityRole="button" hitSlop={8} onPress={() => { setProfileOpening(true); router.push('/profile'); }} style={({ pressed }) => [styles.action, pressed && styles.pressed]}><PlayerAvatar pictureUrl={profilePictureUrl} size={40} user={user} /></Pressable> : (profileOpening || leftAction ? <View style={styles.slot} /> : null));
   return <View style={[styles.header, { paddingTop: insets.top + Spacing.sm }]}>
-    {leftAction ? <View style={styles.slot}>{leftAction}</View> : null}
+    {displayLeftAction ? <View style={styles.slot}>{displayLeftAction}</View> : null}
     <Brand compact />
-    {rightAction ?? (showAvatar && user ? <Pressable accessibilityHint="Opens your profile" accessibilityLabel="Open profile" accessibilityRole="button" hitSlop={8} onPress={() => router.push('/profile')} style={({ pressed }) => [styles.action, pressed && styles.pressed]}><PlayerAvatar size={40} user={user} /></Pressable> : leftAction ? <View style={styles.slot} /> : null)}
+    {displayRightAction}
   </View>;
 }
 

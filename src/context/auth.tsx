@@ -1,10 +1,11 @@
 import { createContext, PropsWithChildren, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { clearCsrfToken, getCsrfToken, getOnboarding, getSession, login as apiLogin, logout as apiLogout, signup as apiSignup } from '@/lib/api';
+import { clearCsrfToken, getCsrfToken, getOnboarding, getProfile, getSession, login as apiLogin, logout as apiLogout, signup as apiSignup } from '@/lib/api';
 import { ApiError, AuthStatus, SessionResponse, SessionUser } from '@/types';
 
 type AuthContextValue = {
   status: AuthStatus;
   user: SessionUser | null;
+  profilePictureUrl: string | null;
   error: ApiError | null;
   refresh: (options?: { silent?: boolean }) => Promise<void>;
   login: (username: string, password: string) => Promise<void>;
@@ -21,12 +22,14 @@ function isApproved(session: SessionResponse): boolean {
 export function AuthProvider({ children }: PropsWithChildren) {
   const [status, setStatus] = useState<AuthStatus>('booting');
   const [user, setUser] = useState<SessionUser | null>(null);
+  const [profilePictureUrl, setProfilePictureUrl] = useState<string | null>(null);
   const [error, setError] = useState<ApiError | null>(null);
   const authGeneration = useRef(0);
   const pendingPollInFlight = useRef(false);
 
   const applySession = useCallback((session: SessionResponse) => {
     setUser(session.user);
+    setProfilePictureUrl(null);
     setStatus(isApproved(session) ? 'approved' : 'pending');
     setError(null);
   }, []);
@@ -44,6 +47,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       const apiError = cause instanceof ApiError ? cause : ApiError.networkError('Unable to reach QueueUp');
       if (apiError.statusCode === 401) {
         setUser(null);
+        setProfilePictureUrl(null);
         setStatus('logged_out');
       } else if (!silent) {
         setError(apiError);
@@ -72,6 +76,17 @@ export function AuthProvider({ children }: PropsWithChildren) {
     return () => clearInterval(interval);
   }, [refresh, status]);
 
+  useEffect(() => {
+    if (status !== 'approved' || !user) return;
+    let active = true;
+    void getProfile(user.username).then((profile) => {
+      if (active) setProfilePictureUrl(profile.player.picture_url);
+    }).catch(() => {
+      // Profile data is optional for the shared header; keep the initials fallback.
+    });
+    return () => { active = false; };
+  }, [status, user]);
+
   const login = useCallback(async (username: string, password: string) => {
     await getCsrfToken();
     await apiLogin({ username, password });
@@ -97,10 +112,11 @@ export function AuthProvider({ children }: PropsWithChildren) {
     await apiLogout();
     clearCsrfToken();
     setUser(null);
+    setProfilePictureUrl(null);
     setStatus('logged_out');
   }, []);
 
-  const value = useMemo(() => ({ status, user, error, refresh, login, signup, logout }), [status, user, error, refresh, login, signup, logout]);
+  const value = useMemo(() => ({ status, user, profilePictureUrl, error, refresh, login, signup, logout }), [status, user, profilePictureUrl, error, refresh, login, signup, logout]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

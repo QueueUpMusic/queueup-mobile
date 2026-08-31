@@ -37,6 +37,10 @@ function AnalyticsList({ title, values }: { title: string; values: [string, numb
   return <View style={styles.analyticsCard}><Text style={styles.sectionTitle}>{title}</Text>{values.slice(0, 5).map(([name, count]) => <View key={name} style={styles.analyticsRow}><Text numberOfLines={1} style={styles.analyticsName}>{name}</Text><Text style={styles.analyticsCount}>{count}</Text></View>)}</View>;
 }
 
+function ProfileHeader({ onBack }: { onBack: () => void }) {
+  return <PlayerHeader leftAction={<Pressable accessibilityLabel="Go back" accessibilityRole="button" hitSlop={8} onPress={onBack} style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}><ChevronLeft color={colors.brand} size={24} /></Pressable>} showAvatar={false} />;
+}
+
 export default function ProfileScreen() {
   const router = useRouter();
   const { user, refresh: refreshSession } = useAuth();
@@ -65,15 +69,15 @@ export default function ProfileScreen() {
 
   useFocusEffect(useCallback(() => { void load(); }, [load]));
 
-  if (loading && !profile) return <View style={styles.screen}><PlayerHeader /><View style={styles.centerState}><ActivityIndicator color={colors.brand} /></View></View>;
-  if (error && !profile) return <View style={styles.screen}><PlayerHeader /><View style={styles.centerState}><Text style={styles.errorTitle}>Profile is taking a moment</Text><ErrorMessage message="We couldn’t load your profile right now." /><Action onPress={() => void load()}>Try again</Action></View></View>;
+  if (loading && !profile) return <View style={styles.screen}><ProfileHeader onBack={() => router.back()} /><View style={styles.centerState}><ActivityIndicator color={colors.brand} /></View></View>;
+  if (error && !profile) return <View style={styles.screen}><ProfileHeader onBack={() => router.back()} /><View style={styles.centerState}><Text style={styles.errorTitle}>Profile is taking a moment</Text><ErrorMessage message="We couldn’t load your profile right now." /><Action onPress={() => void load()}>Try again</Action></View></View>;
 
   const player = profile?.player;
   const metrics = profile?.metrics;
-  if (!player || !metrics) return <View style={styles.screen}><PlayerHeader /><View style={styles.centerState}><Text style={styles.errorTitle}>Profile unavailable</Text><Action onPress={() => void load()}>Try again</Action></View></View>;
+  if (!player || !metrics) return <View style={styles.screen}><ProfileHeader onBack={() => router.back()} /><View style={styles.centerState}><Text style={styles.errorTitle}>Profile unavailable</Text><Action onPress={() => void load()}>Try again</Action></View></View>;
 
   return <View style={styles.screen}>
-    <PlayerHeader leftAction={<Pressable accessibilityLabel="Go back" accessibilityRole="button" hitSlop={8} onPress={() => router.back()} style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}><ChevronLeft color={colors.brand} size={24} /></Pressable>} showAvatar={false} />
+    <ProfileHeader onBack={() => router.back()} />
     <ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl colors={[colors.brand]} onRefresh={() => void load(true)} refreshing={refreshing} tintColor={colors.brand} />}>
       {error ? <View style={styles.inlineError}><Text style={styles.inlineErrorText}>Some profile updates may be unavailable. Pull to try again.</Text></View> : null}
       <View style={styles.hero}>
