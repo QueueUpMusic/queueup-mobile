@@ -1,30 +1,17 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Action, ErrorMessage } from '@/components/auth-ui';
 import { ChevronLeft, PauseIcon, PlayIcon, StarIcon } from '@/components/queueup-icon';
 import { colors, Radii, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/auth';
+import { usePreviewPlayer } from '@/hooks/use-preview-player';
 import { getRoundDetail, saveVote } from '@/lib/api';
 import { ApiError, RoundDetailResponse, SubmissionTrack } from '@/types';
 
 function Artwork({ track }: { track: SubmissionTrack }) {
   return track.album_art_url ? <Image accessibilityLabel={`${track.album} artwork`} resizeMode="cover" source={{ uri: track.album_art_url }} style={[styles.artwork, { height: 80, maxWidth: 240 }]} /> : <View style={[styles.artwork, styles.artworkFallback, { height: 80, maxWidth: 240 }]}><Text style={styles.music}>♫</Text></View>;
-}
-
-function PreviewManager({ track, onStop }: { track: SubmissionTrack | null; onStop: () => void }) {
-  const player = useAudioPlayer(track?.preview_url || null);
-  const status = useAudioPlayerStatus(player);
-  useEffect(() => {
-    if (track?.preview_url) void player.play();
-    return () => { player.pause(); };
-  }, [player, track?.id, track?.preview_url]);
-  useEffect(() => {
-    if (track && !status.playing && status.currentTime > 0 && status.currentTime >= status.duration) onStop();
-  }, [onStop, status.currentTime, status.duration, status.playing, track]);
-  return null;
 }
 
 function Header({ onBack }: { onBack: () => void }) {
@@ -48,6 +35,7 @@ export default function VoteScreen() {
   const [saving, setSaving] = useState(false);
   const [preview, setPreview] = useState<SubmissionTrack | null>(null);
   const [closed, setClosed] = useState(false);
+  usePreviewPlayer({ trackId: preview?.id ?? null, previewUrl: preview?.preview_url || null, onStop: () => setPreview(null), onError: (message) => setError(ApiError.networkError(message)) });
 
   const load = useCallback(async () => {
     const roundId = Number(id);
@@ -99,7 +87,7 @@ export default function VoteScreen() {
   if (!tracks.length || detail.ballot.no_votable_songs) return <SafeAreaView edges={['top', 'bottom']} style={styles.screen}><Header onBack={() => router.replace('/(app)' as never)} /><LockedState title="Nothing to rate" body="There are no eligible songs on your ballot." /></SafeAreaView>;
 
 const PreviewIcon = preview?.id === current.id ? PauseIcon : PlayIcon;
-  return <SafeAreaView edges={['top', 'bottom']} style={styles.screen}><Header onBack={() => router.replace('/(app)' as never)} /><ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}><View style={styles.context}><Text style={styles.eyebrow}>{detail.round.season.name}</Text><Text style={styles.prompt}>{detail.round.prompt}</Text>{detail.round.details ? <Text style={styles.body}>{detail.round.details}</Text> : null}</View><View style={styles.progressRow}><Text style={styles.progress}>{displayProgress}</Text><Text style={styles.songNumber}>Song {index + 1} of {tracks.length}</Text></View><View style={styles.progressTrack}><View style={[styles.progressFill, { width: `${progress.total ? (progress.voted / progress.total) * 100 : 0}%` }]} /></View><View style={styles.card}><Text style={styles.anonymous}>ANONYMOUS SONG</Text><Artwork track={current} /><Text numberOfLines={2} style={styles.title}>{current.title}</Text><Text numberOfLines={1} style={styles.artist}>{current.artist}</Text><Text numberOfLines={1} style={styles.album}>{current.album}</Text>{current.preview_url ? <Pressable accessibilityLabel={`${preview?.id === current.id ? 'Pause' : 'Preview'} ${current.title}`} accessibilityRole="button" onPress={() => setPreview(preview?.id === current.id ? null : current)} style={styles.preview}><PreviewIcon color={colors.brandLight} size={18} /><Text style={styles.previewText}>{preview?.id === current.id ? 'Pause preview' : 'Preview song'}</Text></Pressable> : <Text style={styles.noPreview}>Preview unavailable</Text>}<Text style={styles.ratePrompt}>How well does this fit the prompt?</Text><View accessibilityLabel="Song rating" accessibilityRole="radiogroup" style={styles.stars}>{[1, 2, 3, 4, 5].map((value) => <Pressable key={value} accessibilityLabel={`Rate ${value} out of 5`} accessibilityRole="radio" accessibilityState={{ selected: currentScore === value, disabled: saving }} disabled={saving} onPress={() => void rate(value)} style={({ pressed }) => [styles.starButton, pressed && styles.pressed]}><StarIcon color={currentScore !== undefined && value <= currentScore ? colors.brand : colors.textMuted} filled={currentScore !== undefined && value <= currentScore} size={32} /></Pressable>)}</View><Text accessibilityLiveRegion="polite" style={styles.selectedRating}>{currentScore ? `Your rating: ${currentScore} out of 5` : 'Choose a rating to save and continue.'}</Text>{saving ? <Text style={styles.saving}>Saving rating…</Text> : null}{error ? <ErrorMessage message={error.message} /> : null}</View><Text style={styles.rule}>Rate every song for your ballot to count.</Text><View style={styles.navigation}><Action disabled={index === 0 || saving} secondary onPress={() => { setPreview(null); setIndex((value) => value - 1); }}>Previous</Action><Action disabled={!currentScore || saving || index === tracks.length - 1} onPress={() => { setPreview(null); setIndex((value) => value + 1); }}>Next</Action></View></ScrollView>{preview ? <PreviewManager onStop={() => setPreview(null)} track={preview} /> : null}</SafeAreaView>;
+  return <SafeAreaView edges={['top', 'bottom']} style={styles.screen}><Header onBack={() => router.replace('/(app)' as never)} /><ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}><View style={styles.context}><Text style={styles.eyebrow}>{detail.round.season.name}</Text><Text style={styles.prompt}>{detail.round.prompt}</Text>{detail.round.details ? <Text style={styles.body}>{detail.round.details}</Text> : null}</View><View style={styles.progressRow}><Text style={styles.progress}>{displayProgress}</Text><Text style={styles.songNumber}>Song {index + 1} of {tracks.length}</Text></View><View style={styles.progressTrack}><View style={[styles.progressFill, { width: `${progress.total ? (progress.voted / progress.total) * 100 : 0}%` }]} /></View><View style={styles.card}><Text style={styles.anonymous}>ANONYMOUS SONG</Text><Artwork track={current} /><Text numberOfLines={2} style={styles.title}>{current.title}</Text><Text numberOfLines={1} style={styles.artist}>{current.artist}</Text><Text numberOfLines={1} style={styles.album}>{current.album}</Text>{current.preview_url ? <Pressable accessibilityLabel={`${preview?.id === current.id ? 'Pause' : 'Preview'} ${current.title}`} accessibilityRole="button" onPress={() => setPreview(preview?.id === current.id ? null : current)} style={styles.preview}><PreviewIcon color={colors.brandLight} size={18} /><Text style={styles.previewText}>{preview?.id === current.id ? 'Pause preview' : 'Preview song'}</Text></Pressable> : <Text style={styles.noPreview}>Preview unavailable</Text>}<Text style={styles.ratePrompt}>How well does this fit the prompt?</Text><View accessibilityLabel="Song rating" accessibilityRole="radiogroup" style={styles.stars}>{[1, 2, 3, 4, 5].map((value) => <Pressable key={value} accessibilityLabel={`Rate ${value} out of 5`} accessibilityRole="radio" accessibilityState={{ selected: currentScore === value, disabled: saving }} disabled={saving} onPress={() => void rate(value)} style={({ pressed }) => [styles.starButton, pressed && styles.pressed]}><StarIcon color={currentScore !== undefined && value <= currentScore ? colors.brand : colors.textMuted} filled={currentScore !== undefined && value <= currentScore} size={32} /></Pressable>)}</View><Text accessibilityLiveRegion="polite" style={styles.selectedRating}>{currentScore ? `Your rating: ${currentScore} out of 5` : 'Choose a rating to save and continue.'}</Text>{saving ? <Text style={styles.saving}>Saving rating…</Text> : null}{error ? <ErrorMessage message={error.message} /> : null}</View><Text style={styles.rule}>Rate every song for your ballot to count.</Text><View style={styles.navigation}><Action disabled={index === 0 || saving} secondary onPress={() => { setPreview(null); setIndex((value) => value - 1); }}>Previous</Action><Action disabled={!currentScore || saving || index === tracks.length - 1} onPress={() => { setPreview(null); setIndex((value) => value + 1); }}>Next</Action></View></ScrollView></SafeAreaView>;
 }
 
 const styles = StyleSheet.create({
