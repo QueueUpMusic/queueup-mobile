@@ -93,7 +93,7 @@ function RoundCard({ round, submission, isResults = false }: { round: RoundSumma
 
     {submission && !isResults ? <SubmissionStatus submission={submission} /> : null}
 
-    {primary ? <View style={styles.primaryButton}><Text style={styles.primaryButtonText}>{primary}</Text><ArrowRight color={colors.background} size={19} /></View> : null}
+    {primary ? <Pressable accessibilityLabel={primary} accessibilityRole="button" onPress={(event) => { event.stopPropagation(); router.push(round.state === 'submitting' ? `/round/${round.id}/submit` as never : `/round/${round.id}` as never); }} style={({ pressed }) => [styles.primaryButton, pressed && styles.pressedCard]}><Text style={styles.primaryButtonText}>{primary}</Text><ArrowRight color={colors.background} size={19} /></Pressable> : null}
 
     <View style={styles.secondaryRow}>
       <View style={styles.secondaryButton}><Text style={styles.secondaryButtonText}>Round details</Text></View>

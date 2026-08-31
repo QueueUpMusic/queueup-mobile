@@ -32,6 +32,7 @@ function AuthStack() {
     <Stack.Protected guard={status === 'approved'}>
       <Stack.Screen name="(app)" />
       <Stack.Screen name="round/[id]" />
+      <Stack.Screen name="round/[id]/submit" options={{ animation: 'slide_from_right' }} />
       <Stack.Screen name="profile" options={{ animation: 'slide_from_right' }} />
       <Stack.Screen name="settings" />
     </Stack.Protected>

@@ -1,6 +1,7 @@
 import { SymbolView } from 'expo-symbols';
 import type { ColorValue } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
+import { colors } from '@/constants/theme';
 
 type QueueUpIconName = 'home' | 'archive' | 'rankings' | 'profile';
 const symbols = {
@@ -42,6 +43,27 @@ export function Checkmark({ color, size = 18 }: { color: ColorValue; size?: numb
   return <Svg accessibilityLabel="Selected" fill="none" height={size} viewBox="0 0 24 24" width={size}>
     <Path d="m5 12 4 4L19 6" stroke={color} strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.4} />
   </Svg>;
+}
+
+export function CheckboxIcon({ color, checked, size = 24 }: { color: ColorValue; checked?: boolean; size?: number }) {
+  return <Svg accessibilityLabel={checked ? 'Checked' : 'Unchecked'} fill="none" height={size} viewBox="0 0 24 24" width={size}>
+    <Path d="M5 3.75h14A1.25 1.25 0 0 1 20.25 5v14A1.25 1.25 0 0 1 19 20.25H5A1.25 1.25 0 0 1 3.75 19V5A1.25 1.25 0 0 1 5 3.75Z" fill={checked ? color : 'none'} stroke={color} strokeWidth={1.8} />
+    {checked ? <Path d="m7.5 12 3 3 6-6" stroke={colors.background} strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} /> : null}
+  </Svg>;
+}
+
+export function SearchIcon({ color, size = 21 }: { color: ColorValue; size?: number }) {
+  return <Svg accessibilityLabel="Search" fill="none" height={size} viewBox="0 0 24 24" width={size}>
+    <Path d="m20 20-4.3-4.3m2.3-5.2a7.5 7.5 0 1 1-15 0 7.5 7.5 0 0 1 15 0Z" stroke={color} strokeLinecap="round" strokeWidth={2} />
+  </Svg>;
+}
+
+export function PlayIcon({ color, size = 18 }: { color: ColorValue; size?: number }) {
+  return <Svg accessibilityLabel="Play preview" fill={color} height={size} viewBox="0 0 24 24" width={size}><Path d="m8 5 11 7-11 7V5Z" /></Svg>;
+}
+
+export function PauseIcon({ color, size = 18 }: { color: ColorValue; size?: number }) {
+  return <Svg accessibilityLabel="Pause preview" fill={color} height={size} viewBox="0 0 24 24" width={size}><Path d="M7 5h3v14H7zM14 5h3v14h-3z" /></Svg>;
 }
 
 export function SettingsIcon({ color, size = 22 }: { color: ColorValue; size?: number }) {

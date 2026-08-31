@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { ActivityIndicator, Image, Linking, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Action, ErrorMessage } from '@/components/auth-ui';
 import { ChevronLeft } from '@/components/queueup-icon';
@@ -34,7 +34,8 @@ function UpcomingContent({ round }: { round: RoundSummary }) {
 }
 
 function SubmittingContent({ round, submission }: { round: RoundSummary; submission: SubmissionTrack | null }) {
-  return <StateCard title="Submissions are open" body={`Submissions close ${formatDate(round.submission_deadline)}.`}>{submission ? <View style={styles.submission}><Artwork track={submission} /><View style={styles.trackCopy}><Text style={styles.trackEyebrow}>Your submission</Text><Text style={styles.trackTitle}>{submission.title}</Text><Text style={styles.trackArtist}>{submission.artist}</Text></View></View> : <><Text style={styles.info}>Your song stays private until the round is revealed.</Text><Action disabled onPress={() => undefined}>Submission experience coming next</Action></>}</StateCard>;
+  const router = useRouter();
+  return <StateCard title="Submissions are open" body={`Submissions close ${formatDate(round.submission_deadline)}.`}>{submission ? <View style={styles.submission}><Artwork track={submission} /><View style={styles.trackCopy}><Text style={styles.trackEyebrow}>Your submission</Text><Text style={styles.trackTitle}>{submission.title}</Text><Text style={styles.trackArtist}>{submission.artist}</Text></View></View> : <><Text style={styles.info}>Your song stays private until the round is revealed.</Text><Action onPress={() => router.push(`/round/${round.id}/submit` as never)}>Choose your song</Action></>}</StateCard>;
 }
 
 function VotingContent({ round, ballot }: { round: RoundSummary; ballot: RoundDetailResponse['ballot'] }) {
@@ -79,7 +80,7 @@ export default function RoundDetailScreen() {
     } finally { setLoading(false); setRefreshing(false); }
   }, [id, refreshSession]);
 
-  useEffect(() => { const timer = setTimeout(() => { void load(); }, 0); return () => clearTimeout(timer); }, [load]);
+  useFocusEffect(useCallback(() => { void load(); }, [load]));
 
   if (loading && !detail) return <SafeAreaView edges={['top', 'bottom']} style={styles.screen}><View style={styles.loading}><ActivityIndicator color={colors.brand} /></View></SafeAreaView>;
   if (error && !detail) return <SafeAreaView edges={['top', 'bottom']} style={styles.screen}><View style={styles.errorState}><Text style={styles.errorTitle}>{error.statusCode === 404 ? 'Round not found' : 'Round is unavailable'}</Text><ErrorMessage message={error.isNetworkError ? 'We couldn’t reach QueueUp. Check your connection and try again.' : 'We couldn’t load this round right now.'} /><Action onPress={() => void load()}>Try again</Action><Action secondary onPress={() => router.back()}>Back home</Action></View></SafeAreaView>;

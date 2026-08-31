@@ -90,6 +90,34 @@ export interface SubmissionTrack {
   preview_url: string | null;
 }
 
+export interface SpotifySearchTrack {
+  id: string;
+  uri: string;
+  url: string;
+  title: string;
+  artist: string;
+  artist_ids: string[];
+  album: string;
+  art: string;
+  preview: string;
+  explicit: boolean;
+  isrc: string;
+  used: boolean;
+  available: boolean;
+}
+
+export interface SpotifySearchResponse {
+  tracks: SpotifySearchTrack[];
+}
+
+export interface SubmissionStatusResponse {
+  round: RoundSummary;
+  submission: SubmissionTrack | null;
+  can_submit: boolean;
+  submission_rules_accepted: boolean;
+  submission_bonus_points: number;
+}
+
 export interface RoundBallot {
   saved_scores: Record<string, number>;
   eligible_count: number;

@@ -23,6 +23,9 @@ import {
   SeasonsResponse,
   SignupPayload,
   SessionResponse,
+  SpotifySearchResponse,
+  SubmissionStatusResponse,
+  SubmissionTrack,
 } from '@/types';
 
 /**
@@ -217,6 +220,14 @@ export async function getRoundDetail(roundId: number): Promise<RoundDetailRespon
   return apiGet<RoundDetailResponse>(`rounds/${roundId}/`);
 }
 
+export async function searchSpotify(query: string, roundId: number): Promise<SpotifySearchResponse> {
+  return apiGet<SpotifySearchResponse>(`spotify/search/?q=${encodeURIComponent(query)}&round=${roundId}`);
+}
+
+export async function getSubmissionStatus(roundId: number): Promise<SubmissionStatusResponse> {
+  return apiGet<SubmissionStatusResponse>(`rounds/${roundId}/submission/`);
+}
+
 let csrfToken: string | null = null;
 
 export function clearCsrfToken(): void {
@@ -266,4 +277,12 @@ export function signup(payload: SignupPayload): Promise<SessionResponse> {
 
 export function logout(): Promise<unknown> {
   return apiMutation('auth/logout/', 'POST');
+}
+
+export function acceptSubmissionRules(): Promise<{ submission_rules_accepted: boolean }> {
+  return apiMutation('onboarding/submission-rules/', 'POST');
+}
+
+export function createSubmission(roundId: number, trackId: string): Promise<{ submission: SubmissionTrack; submission_bonus_points: number }> {
+  return apiMutation(`rounds/${roundId}/submissions/`, 'POST', { track_id: trackId });
 }

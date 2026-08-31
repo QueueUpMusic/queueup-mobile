@@ -7,12 +7,10 @@
     "icon": "./assets/images/queueup-icon.png",
     "scheme": "queueupmobile",
     "userInterfaceStyle": "dark",
-
     "ios": {
       "icon": "./assets/images/queueup-icon.png",
       "bundleIdentifier": "com.queueupmusic.queueup"
     },
-
     "android": {
       "package": "com.queueupmusic.queueup",
       "adaptiveIcon": {
@@ -22,12 +20,10 @@
       },
       "predictiveBackGestureEnabled": false
     },
-
     "web": {
       "output": "static",
       "favicon": "./assets/images/queueup-icon.png"
     },
-
     "plugins": [
       "expo-router",
       [
@@ -38,21 +34,19 @@
           "imageWidth": 144,
           "resizeMode": "contain"
         }
-      ]
+      ],
+      "expo-audio"
     ],
-
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
     },
-
     "extra": {
       "router": {},
       "eas": {
         "projectId": "a536c245-89b4-48d3-bff9-621d5b350838"
       }
     },
-
     "owner": "queueupmusic"
   }
 }
