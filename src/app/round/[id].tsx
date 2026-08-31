@@ -3,6 +3,7 @@ import { ActivityIndicator, Image, Linking, Pressable, RefreshControl, ScrollVie
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Action, ErrorMessage } from '@/components/auth-ui';
+import { ChevronLeft } from '@/components/queueup-icon';
 import { colors, Radii, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/auth';
 import { getRoundDetail } from '@/lib/api';
@@ -16,7 +17,7 @@ function Artwork({ track, large = false }: { track: SubmissionTrack; large?: boo
 }
 
 function RoundHeader({ round, onBack }: { round: RoundSummary; onBack: () => void }) {
-  return <View style={styles.header}><Pressable accessibilityLabel="Go back" accessibilityRole="button" hitSlop={10} onPress={onBack} style={styles.back}><Text style={styles.backText}>‹</Text><Text style={styles.backLabel}>Home</Text></Pressable><Text style={styles.state}>{stateLabel(round.state)}</Text></View>;
+  return <View style={styles.header}><Pressable accessibilityLabel="Go back" accessibilityRole="button" hitSlop={10} onPress={onBack} style={styles.back}><ChevronLeft color={colors.brand} size={25} /><Text style={styles.backLabel}>Home</Text></Pressable><Text style={styles.state}>{stateLabel(round.state)}</Text></View>;
 }
 
 function RoundIntro({ round }: { round: RoundSummary }) {

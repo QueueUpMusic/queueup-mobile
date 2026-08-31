@@ -3,6 +3,7 @@ import { ActivityIndicator, Image, Pressable, RefreshControl, ScrollView, StyleS
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Action, ErrorMessage } from '@/components/auth-ui';
 import { PlayerHeader } from '@/components/player-header';
+import { ArrowRight, Checkmark } from '@/components/queueup-icon';
 import { resolveServerUrl } from '@/config/server';
 import { colors, Radii, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/auth';
@@ -50,7 +51,7 @@ function CountdownPanel({ round, isResults }: { round: RoundSummary; isResults: 
 }
 
 function SubmissionStatus({ submission }: { submission: SubmissionTrack }) {
-  return <View style={styles.submitted}><View style={styles.submissionArtwork}>{submission.album_art_url ? <Image accessibilityLabel={`${submission.album} artwork`} source={{ uri: submission.album_art_url }} style={styles.submissionImage} /> : <Text style={styles.artworkFallback}>♫</Text>}</View><View style={styles.submissionCopy}><Text style={styles.submissionTitle}>Song locked in</Text><Text style={styles.submissionText}>{submission.title} · {submission.artist}</Text><Text style={styles.submissionText}>Your pick stays secret until reveal.</Text></View><Text style={styles.check}>✓</Text></View>;
+  return <View style={styles.submitted}><View style={styles.submissionArtwork}>{submission.album_art_url ? <Image accessibilityLabel={`${submission.album} artwork`} source={{ uri: submission.album_art_url }} style={styles.submissionImage} /> : <Text style={styles.artworkFallback}>♫</Text>}</View><View style={styles.submissionCopy}><Text style={styles.submissionTitle}>Song locked in</Text><Text style={styles.submissionText}>{submission.title} · {submission.artist}</Text><Text style={styles.submissionText}>Your pick stays secret until reveal.</Text></View><View style={styles.check}><Checkmark color={colors.background} size={19} /></View></View>;
 }
 
 function HostCard({ host }: { host: NonNullable<RoundSummary['host']> }) {
@@ -93,7 +94,7 @@ function RoundCard({ round, submission, isResults = false }: { round: RoundSumma
 
     {submission && !isResults ? <SubmissionStatus submission={submission} /> : null}
 
-    {primary ? <View style={styles.primaryButton}><Text style={styles.primaryButtonText}>{primary} <Text style={styles.arrow}>→</Text></Text></View> : null}
+    {primary ? <View style={styles.primaryButton}><Text style={styles.primaryButtonText}>{primary}</Text><ArrowRight color={colors.background} size={19} /></View> : null}
 
     <View style={styles.secondaryRow}>
       <View style={styles.secondaryButton}><Text style={styles.secondaryButtonText}>Round details</Text></View>
@@ -179,9 +180,8 @@ const styles = StyleSheet.create({
   submissionTitle: { color: colors.text, fontSize: 14, fontWeight: '800' },
   submissionText: { color: colors.textMuted, fontSize: 12, lineHeight: 17 },
   check: { alignItems: 'center', backgroundColor: colors.brand, borderRadius: 18, color: colors.background, fontSize: 18, fontWeight: '900', height: 34, justifyContent: 'center', overflow: 'hidden', textAlign: 'center', width: 34 },
-  primaryButton: { alignItems: 'center', alignSelf: 'flex-start', backgroundColor: colors.brand, borderRadius: 14, justifyContent: 'center', minHeight: 52, paddingHorizontal: Spacing.lg },
+  primaryButton: { alignItems: 'center', alignSelf: 'flex-start', backgroundColor: colors.brand, borderRadius: 14, flexDirection: 'row', gap: Spacing.sm, justifyContent: 'center', minHeight: 52, paddingHorizontal: Spacing.lg },
   primaryButtonText: { color: colors.background, fontSize: 16, fontWeight: '900' },
-  arrow: { fontSize: 21 },
   secondaryRow: { flexDirection: 'row', gap: Spacing.sm },
   secondaryButton: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderRadius: Radii.small, borderWidth: 1, flex: 1, justifyContent: 'center', minHeight: 48, paddingHorizontal: Spacing.md },
   secondaryButtonText: { color: colors.text, fontSize: 15, fontWeight: '800' },

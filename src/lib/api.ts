@@ -12,11 +12,13 @@ import {
   ApiErrorResponse,
   ApiResponse,
   ApiSuccessResponse,
+  ArchiveResponse,
   CsrfResponse,
   DashboardResponse,
   LoginPayload,
   OnboardingResponse,
   RoundDetailResponse,
+  SeasonsResponse,
   SignupPayload,
   SessionResponse,
 } from '@/types';
@@ -189,6 +191,14 @@ export async function getOnboarding(): Promise<OnboardingResponse> {
 
 export async function getDashboard(): Promise<DashboardResponse> {
   return apiGet<DashboardResponse>('dashboard/');
+}
+
+export async function getSeasons(): Promise<SeasonsResponse> {
+  return apiGet<SeasonsResponse>('seasons/');
+}
+
+export async function getArchive(): Promise<ArchiveResponse> {
+  return apiGet<ArchiveResponse>('archive/');
 }
 
 export async function getRoundDetail(roundId: number): Promise<RoundDetailResponse> {

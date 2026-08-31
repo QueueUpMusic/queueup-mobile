@@ -130,6 +130,14 @@ export interface DashboardResponse {
   my_submission: SubmissionTrack | null;
 }
 
+export interface SeasonsResponse {
+  seasons: SeasonSummary[];
+}
+
+export interface ArchiveResponse {
+  rounds: RoundSummary[];
+}
+
 /** User data returned by the session endpoint. Extra backend fields are preserved. */
 export interface SessionUser {
   id: number;
