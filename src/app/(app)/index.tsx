@@ -47,7 +47,7 @@ function CountdownPanel({ round, isResults }: { round: RoundSummary; isResults: 
   }, [target]);
 
   const label = isResults ? 'Round revealed' : round.state === 'upcoming' ? 'Submissions open in' : round.state === 'submitting' ? 'Submissions close in' : round.state === 'voting' ? 'Voting closes in' : round.state === 'locked' ? 'Reveal begins in' : 'Revealed';
-  return <View style={styles.countdownPanel}><Text style={styles.countdownLabel}>{label}</Text><Text numberOfLines={isResults ? 2 : 1} style={[styles.countdownValue, isResults && styles.revealedDate]}>{isResults ? formatDate(round.reveal_at) : formatCountdown(target, now)}</Text></View>;
+  return <View style={styles.countdownPanel}><Text numberOfLines={2} style={styles.countdownLabel}>{label}</Text><Text numberOfLines={isResults ? 2 : 1} style={[styles.countdownValue, isResults && styles.revealedDate]}>{isResults ? formatDate(round.reveal_at) : formatCountdown(target, now)}</Text></View>;
 }
 
 function SubmissionStatus({ submission }: { submission: SubmissionTrack }) {
@@ -88,9 +88,8 @@ function RoundCard({ round, submission, isResults = false }: { round: RoundSumma
     <View style={styles.statsRow}>
       <View style={styles.metric}><Text style={styles.metricValue}>{round.submission_count}</Text><Text style={styles.metricLabel}>Songs</Text></View>
       <View style={styles.metric}><Text style={styles.metricValue}>{round.rating_count}</Text><Text style={styles.metricLabel}>Ratings</Text></View>
+      {round.host ? <HostCard host={round.host} /> : null}
     </View>
-
-    {round.host ? <View style={styles.hostRow}><HostCard host={round.host} /></View> : null}
 
     {submission && !isResults ? <SubmissionStatus submission={submission} /> : null}
 
@@ -146,32 +145,31 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   screen: { backgroundColor: colors.background, flex: 1 },
   scroll: { flex: 1 },
-  content: { alignSelf: 'center', flexGrow: 1, gap: Spacing.md, maxWidth: 800, padding: Spacing.xl, paddingBottom: 40, width: '100%' },
+  content: { alignSelf: 'center', flexGrow: 1, gap: Spacing.md, maxWidth: 800, padding: Spacing.lg, paddingBottom: 40, width: '100%' },
   centerState: { flex: 1, justifyContent: 'center', padding: Spacing.xl },
   section: { color: colors.textMuted, fontSize: 14, fontWeight: '700', letterSpacing: 1, marginTop: Spacing.lg, textTransform: 'uppercase' },
-  card: { backgroundColor: colors.surfaceElevated, borderColor: colors.borderSoft, borderRadius: Radii.large, borderWidth: 1, gap: Spacing.xl, overflow: 'hidden', padding: Spacing.xl },
+  card: { backgroundColor: colors.surfaceElevated, borderColor: colors.borderSoft, borderRadius: Radii.large, borderWidth: 1, gap: Spacing.lg, overflow: 'hidden', padding: Spacing.lg },
   pressedCard: { opacity: 0.85 },
   eyebrow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
-  seasonPill: { backgroundColor: 'rgba(32, 223, 114, 0.1)', borderColor: 'rgba(32, 223, 114, 0.24)', borderRadius: 999, borderWidth: 1, color: colors.brandLight, fontSize: 11, fontWeight: '800', letterSpacing: 1, maxWidth: '62%', overflow: 'hidden', paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, textTransform: 'uppercase' },
-  statePill: { backgroundColor: 'rgba(32, 223, 114, 0.1)', borderRadius: 999, color: colors.brandLight, fontSize: 11, fontWeight: '800', letterSpacing: 1, overflow: 'hidden', paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm },
+  seasonPill: { backgroundColor: 'rgba(32, 223, 114, 0.1)', borderColor: 'rgba(32, 223, 114, 0.24)', borderRadius: 999, borderWidth: 1, color: colors.brandLight, fontSize: 10, fontWeight: '800', letterSpacing: 0.8, maxWidth: '62%', overflow: 'hidden', paddingHorizontal: Spacing.sm, paddingVertical: 6, textTransform: 'uppercase' },
+  statePill: { backgroundColor: 'rgba(32, 223, 114, 0.1)', borderRadius: 999, color: colors.brandLight, fontSize: 10, fontWeight: '800', letterSpacing: 0.8, overflow: 'hidden', paddingHorizontal: Spacing.sm, paddingVertical: 6 },
   lockedPill: { backgroundColor: colors.surfaceHighest, color: colors.textMuted },
-  headingGroup: { gap: Spacing.md },
-  prompt: { color: colors.text, fontSize: 40, fontWeight: '900', letterSpacing: -1.6, lineHeight: 43 },
-  body: { color: colors.textMuted, fontSize: 17, lineHeight: 25 },
-  countdownPanel: { backgroundColor: 'rgba(0, 0, 0, 0.2)', borderColor: colors.borderSoft, borderRadius: Radii.medium, borderWidth: 1, gap: Spacing.lg, minHeight: 138, padding: Spacing.lg },
-  countdownLabel: { color: colors.textMuted, fontSize: 16 },
-  countdownValue: { color: colors.text, fontSize: 26, fontVariant: ['tabular-nums'], fontWeight: '900', letterSpacing: -0.7 },
-  revealedDate: { fontSize: 22, lineHeight: 28 },
+  headingGroup: { gap: Spacing.sm },
+  prompt: { color: colors.text, fontSize: 31, fontWeight: '900', letterSpacing: -1.1, lineHeight: 35 },
+  body: { color: colors.textMuted, fontSize: 15, lineHeight: 21 },
+  countdownPanel: { alignItems: 'center', backgroundColor: 'rgba(0, 0, 0, 0.2)', borderColor: colors.borderSoft, borderRadius: Radii.medium, borderWidth: 1, flexDirection: 'row', gap: Spacing.sm, justifyContent: 'space-between', minHeight: 76, paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm },
+  countdownLabel: { color: colors.textMuted, flex: 1, fontSize: 13, lineHeight: 18 },
+  countdownValue: { color: colors.text, flexShrink: 1, fontSize: 18, fontVariant: ['tabular-nums'], fontWeight: '900', letterSpacing: -0.4, textAlign: 'right' },
+  revealedDate: { fontSize: 15, lineHeight: 20 },
   statsRow: { flexDirection: 'row', gap: Spacing.sm },
-  metric: { backgroundColor: 'rgba(255,255,255,0.04)', borderColor: colors.borderSoft, borderRadius: Radii.medium, borderWidth: 1, flex: 1, minHeight: 108, padding: Spacing.lg },
-  metricValue: { color: colors.text, fontSize: 30, fontWeight: '800' },
-  metricLabel: { color: colors.textMuted, fontSize: 14, marginTop: Spacing.xs },
-  hostRow: { flexDirection: 'row' },
-  hostCard: { flex: 0, minWidth: '48%', paddingBottom: Spacing.md },
-  hostAvatar: { alignItems: 'center', backgroundColor: colors.surfaceHighest, borderRadius: Radii.small, height: 48, justifyContent: 'center', overflow: 'hidden', width: 48 },
-  hostImage: { height: 48, width: 48 },
-  hostInitial: { color: colors.brandLight, fontSize: 20, fontWeight: '800' },
-  hostName: { color: colors.text, fontSize: 16, fontWeight: '800', marginTop: Spacing.sm },
+  metric: { backgroundColor: 'rgba(255,255,255,0.04)', borderColor: colors.borderSoft, borderRadius: Radii.medium, borderWidth: 1, flex: 1, minHeight: 84, padding: Spacing.sm },
+  metricValue: { color: colors.text, fontSize: 23, fontWeight: '800' },
+  metricLabel: { color: colors.textMuted, fontSize: 11, marginTop: 2 },
+  hostCard: { minWidth: 0, paddingBottom: Spacing.sm },
+  hostAvatar: { alignItems: 'center', backgroundColor: colors.surfaceHighest, borderRadius: 8, height: 30, justifyContent: 'center', overflow: 'hidden', width: 30 },
+  hostImage: { height: 30, width: 30 },
+  hostInitial: { color: colors.brandLight, fontSize: 14, fontWeight: '800' },
+  hostName: { color: colors.text, fontSize: 11, fontWeight: '800', marginTop: 3 },
   submitted: { alignItems: 'center', backgroundColor: 'rgba(32, 223, 114, 0.08)', borderColor: 'rgba(32, 223, 114, 0.2)', borderRadius: Radii.medium, borderWidth: 1, flexDirection: 'row', gap: Spacing.md, padding: Spacing.md },
   submissionArtwork: { alignItems: 'center', backgroundColor: colors.surfaceHighest, borderRadius: Radii.small, height: 54, justifyContent: 'center', overflow: 'hidden', width: 54 },
   submissionImage: { height: 54, width: 54 },
@@ -180,11 +178,11 @@ const styles = StyleSheet.create({
   submissionTitle: { color: colors.text, fontSize: 14, fontWeight: '800' },
   submissionText: { color: colors.textMuted, fontSize: 12, lineHeight: 17 },
   check: { alignItems: 'center', backgroundColor: colors.brand, borderRadius: 18, color: colors.background, fontSize: 18, fontWeight: '900', height: 34, justifyContent: 'center', overflow: 'hidden', textAlign: 'center', width: 34 },
-  primaryButton: { alignItems: 'center', alignSelf: 'flex-start', backgroundColor: colors.brand, borderRadius: 14, flexDirection: 'row', gap: Spacing.sm, justifyContent: 'center', minHeight: 52, paddingHorizontal: Spacing.lg },
-  primaryButtonText: { color: colors.background, fontSize: 16, fontWeight: '900' },
+  primaryButton: { alignItems: 'center', alignSelf: 'stretch', backgroundColor: colors.brand, borderRadius: 14, flexDirection: 'row', gap: Spacing.sm, justifyContent: 'center', minHeight: 46, paddingHorizontal: Spacing.lg },
+  primaryButtonText: { color: colors.background, fontSize: 15, fontWeight: '900' },
   secondaryRow: { flexDirection: 'row', gap: Spacing.sm },
-  secondaryButton: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderRadius: Radii.small, borderWidth: 1, flex: 1, justifyContent: 'center', minHeight: 48, paddingHorizontal: Spacing.md },
-  secondaryButtonText: { color: colors.text, fontSize: 15, fontWeight: '800' },
+  secondaryButton: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderRadius: Radii.small, borderWidth: 1, flex: 1, justifyContent: 'center', minHeight: 44, paddingHorizontal: Spacing.sm },
+  secondaryButtonText: { color: colors.text, fontSize: 14, fontWeight: '800' },
   muted: { color: colors.textMuted, fontSize: 14 },
   title: { color: colors.text, fontSize: 24, fontWeight: '800', marginTop: Spacing.xxl },
   empty: { alignItems: 'center', flex: 1, justifyContent: 'center', minHeight: 360, padding: Spacing.xxl },
