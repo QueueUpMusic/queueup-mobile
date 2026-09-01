@@ -293,6 +293,10 @@ export function acceptSubmissionRules(): Promise<{ submission_rules_accepted: bo
   return apiMutation('onboarding/submission-rules/', 'POST');
 }
 
+export function acknowledgeVotingGuide(): Promise<{ voting_guide_seen: boolean }> {
+  return apiMutation('onboarding/voting-guide/', 'POST');
+}
+
 export function createSubmission(roundId: number, trackId: string): Promise<{ submission: SubmissionTrack; submission_bonus_points: number }> {
   return apiMutation(`rounds/${roundId}/submissions/`, 'POST', { track_id: trackId });
 }

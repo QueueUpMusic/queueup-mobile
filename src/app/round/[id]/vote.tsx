@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Action, ErrorMessage } from '@/components/auth-ui';
@@ -7,7 +7,7 @@ import { ChevronLeft, StarIcon } from '@/components/queueup-icon';
 import { colors, Radii, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/auth';
 import { SpotifyEmbed } from '@/components/spotify-preview-modal';
-import { getRoundDetail, saveVote } from '@/lib/api';
+import { acknowledgeVotingGuide, getRoundDetail, saveVote } from '@/lib/api';
 import { ApiError, RoundDetailResponse } from '@/types';
 
 function Header({ onBack }: { onBack: () => void }) {
@@ -16,6 +16,10 @@ function Header({ onBack }: { onBack: () => void }) {
 
 function LockedState({ title, body, onRetry }: { title: string; body: string; onRetry?: () => void }) {
   return <View style={styles.center}><Text style={styles.lockedTitle}>{title}</Text><Text style={styles.body}>{body}</Text>{onRetry ? <Action onPress={onRetry}>Try again</Action> : null}</View>;
+}
+
+function VotingGuideModal({ saving, onContinue }: { saving: boolean; onContinue: () => void }) {
+  return <Modal animationType="fade" onRequestClose={() => undefined} transparent visible><View style={{ alignItems: 'center', backgroundColor: 'rgba(0, 0, 0, 0.72)', flex: 1, justifyContent: 'center', padding: Spacing.xl }}><View accessibilityViewIsModal style={{ backgroundColor: colors.surfaceElevated, borderColor: colors.brand, borderRadius: Radii.large, borderWidth: 1, gap: Spacing.md, maxWidth: 460, padding: Spacing.xl, width: '100%' }}><View style={{ alignItems: 'center', backgroundColor: 'rgba(32, 223, 114, 0.14)', borderRadius: 24, height: 48, justifyContent: 'center', width: 48 }}><StarIcon color={colors.brand} filled size={25} /></View><Text style={{ color: colors.brandLight, fontSize: 12, fontWeight: '900', letterSpacing: 1.1, textTransform: 'uppercase' }}>Welcome to voting</Text><Text style={{ color: colors.text, fontSize: 27, fontWeight: '900' }}>Here&apos;s how it works</Text><View style={{ gap: Spacing.md }}>{[['Explore anonymous picks.', 'You’ll see songs submitted by other players, but not who chose each one.'], ['Listen first.', 'Play the available clip or open the song in Spotify.'], ['Rate the fit.', 'Choose 1–5 stars based on how well the song matches the prompt.']].map(([heading, body], index) => <View key={heading} style={{ flexDirection: 'row', gap: Spacing.sm }}><View style={{ alignItems: 'center', backgroundColor: colors.brand, borderRadius: 12, height: 24, justifyContent: 'center', width: 24 }}><Text style={{ color: colors.background, fontSize: 12, fontWeight: '900' }}>{index + 1}</Text></View><View style={{ flex: 1, gap: 2 }}><Text style={{ color: colors.text, fontSize: 15, fontWeight: '800' }}>{heading}</Text><Text style={{ color: colors.textMuted, fontSize: 14, lineHeight: 20 }}>{body}</Text></View></View>)}</View><Action disabled={saving} onPress={onContinue}>{saving ? 'Saving…' : 'Start voting'}</Action></View></View></Modal>;
 }
 
 export default function VoteScreen() {
@@ -30,6 +34,8 @@ export default function VoteScreen() {
   const [progress, setProgress] = useState({ voted: 0, total: 0, complete: false });
   const [saving, setSaving] = useState(false);
   const [closed, setClosed] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
+  const [savingGuide, setSavingGuide] = useState(false);
   const load = useCallback(async () => {
     const roundId = Number(id);
     if (!Number.isInteger(roundId) || roundId < 1) { setError(ApiError.fromHttpStatus(404, 'This round could not be found.')); setLoading(false); return; }
@@ -40,6 +46,7 @@ export default function VoteScreen() {
       setScores(next.ballot.saved_scores);
       setProgress({ voted: next.ballot.voted_count, total: next.ballot.eligible_count, complete: next.ballot.complete });
       setClosed(next.round.state !== 'voting');
+      setShowGuide(next.show_voting_guide);
       if (next.ballot.complete && review !== '1') router.replace(`/round/${roundId}/vote/complete` as never);
       setIndex((current) => Math.min(current, Math.max(0, (next.ballot.eligible_submissions?.length ?? 1) - 1)));
     } catch (cause) {
@@ -55,6 +62,13 @@ export default function VoteScreen() {
   const currentScore = current ? scores[String(current.id)] : undefined;
   const isVoting = detail?.round.state === 'voting' && !closed;
   const displayProgress = useMemo(() => `${progress.voted} of ${progress.total} rated`, [progress]);
+
+  const continueFromGuide = async () => {
+    setSavingGuide(true);
+    try { await acknowledgeVotingGuide(); } catch { /* The web flow dismisses the guide even if acknowledgement fails. */ }
+    setShowGuide(false);
+    setSavingGuide(false);
+  };
 
   const rate = async (score: number) => {
     if (!current || saving || !isVoting) return;
@@ -79,7 +93,7 @@ export default function VoteScreen() {
   if (!isVoting) return <SafeAreaView edges={['top', 'bottom']} style={styles.screen}><Header onBack={() => router.replace('/(app)' as never)} /><LockedState title={detail.round.state === 'locked' ? 'Votes are locked' : 'Voting is closed'} body={detail.round.state === 'locked' ? 'Results are being prepared for this round.' : 'QueueUp is no longer accepting ratings for this round.'} /></SafeAreaView>;
   if (!tracks.length || detail.ballot.no_votable_songs) return <SafeAreaView edges={['top', 'bottom']} style={styles.screen}><Header onBack={() => router.replace('/(app)' as never)} /><LockedState title="Nothing to rate" body="There are no eligible songs on your ballot." /></SafeAreaView>;
 
-  return <SafeAreaView edges={['top', 'bottom']} style={styles.screen}><Header onBack={() => router.replace('/(app)' as never)} /><ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}><View style={styles.context}><Text style={styles.eyebrow}>{detail.round.season.name}</Text><Text style={styles.prompt}>{detail.round.prompt}</Text>{detail.round.details ? <Text style={styles.body}>{detail.round.details}</Text> : null}</View><View style={styles.progressRow}><Text style={styles.progress}>{displayProgress}</Text><Text style={styles.songNumber}>Song {index + 1} of {tracks.length}</Text></View><View style={styles.progressTrack}><View style={[styles.progressFill, { width: `${progress.total ? (progress.voted / progress.total) * 100 : 0}%` }]} /></View><View style={styles.card}><Text style={styles.anonymous}>ANONYMOUS SONG</Text><SpotifyEmbed trackId={current.spotify_track_id} /><Text style={styles.ratePrompt}>How well does this fit the prompt?</Text><View accessibilityLabel="Song rating" accessibilityRole="radiogroup" style={styles.stars}>{[1, 2, 3, 4, 5].map((value) => <Pressable key={value} accessibilityLabel={`Rate ${value} out of 5`} accessibilityRole="radio" accessibilityState={{ selected: currentScore === value, disabled: saving }} disabled={saving} onPress={() => void rate(value)} style={({ pressed }) => [styles.starButton, pressed && styles.pressed]}><StarIcon color={currentScore !== undefined && value <= currentScore ? colors.brand : colors.textMuted} filled={currentScore !== undefined && value <= currentScore} size={32} /></Pressable>)}</View><Text accessibilityLiveRegion="polite" style={styles.selectedRating}>{currentScore ? `Your rating: ${currentScore} out of 5` : 'Choose a rating to save and continue.'}</Text>{saving ? <Text style={styles.saving}>Saving rating…</Text> : null}{error ? <ErrorMessage message={error.message} /> : null}</View><Text style={styles.rule}>Rate every song for your ballot to count.</Text><View style={styles.navigation}><Action disabled={index === 0 || saving} secondary onPress={() => setIndex((value) => value - 1)}>Previous</Action><Action disabled={!currentScore || saving || index === tracks.length - 1} onPress={() => setIndex((value) => value + 1)}>Next</Action></View></ScrollView></SafeAreaView>;
+  return <SafeAreaView edges={['top', 'bottom']} style={styles.screen}><Header onBack={() => router.replace('/(app)' as never)} /><ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}><View style={styles.context}><Text style={styles.eyebrow}>{detail.round.season.name}</Text><Text style={styles.prompt}>{detail.round.prompt}</Text>{detail.round.details ? <Text style={styles.body}>{detail.round.details}</Text> : null}</View><View style={styles.progressRow}><Text style={styles.progress}>{displayProgress}</Text><Text style={styles.songNumber}>Song {index + 1} of {tracks.length}</Text></View><View style={styles.progressTrack}><View style={[styles.progressFill, { width: `${progress.total ? (progress.voted / progress.total) * 100 : 0}%` }]} /></View><View style={styles.card}><Text style={styles.anonymous}>ANONYMOUS SONG</Text><SpotifyEmbed trackId={current.spotify_track_id} /><Text style={styles.ratePrompt}>How well does this fit the prompt?</Text><View accessibilityLabel="Song rating" accessibilityRole="radiogroup" style={styles.stars}>{[1, 2, 3, 4, 5].map((value) => <Pressable key={value} accessibilityLabel={`Rate ${value} out of 5`} accessibilityRole="radio" accessibilityState={{ selected: currentScore === value, disabled: saving }} disabled={saving} onPress={() => void rate(value)} style={({ pressed }) => [styles.starButton, pressed && styles.pressed]}><StarIcon color={currentScore !== undefined && value <= currentScore ? colors.brand : colors.textMuted} filled={currentScore !== undefined && value <= currentScore} size={32} /></Pressable>)}</View><Text accessibilityLiveRegion="polite" style={styles.selectedRating}>{currentScore ? `Your rating: ${currentScore} out of 5` : 'Choose a rating to save and continue.'}</Text>{saving ? <Text style={styles.saving}>Saving rating…</Text> : null}{error ? <ErrorMessage message={error.message} /> : null}</View><Text style={styles.rule}>Rate every song for your ballot to count.</Text><View style={styles.navigation}><Action disabled={index === 0 || saving} secondary onPress={() => setIndex((value) => value - 1)}>Previous</Action><Action disabled={!currentScore || saving || index === tracks.length - 1} onPress={() => setIndex((value) => value + 1)}>Next</Action></View></ScrollView>{showGuide ? <VotingGuideModal onContinue={() => void continueFromGuide()} saving={savingGuide} /> : null}</SafeAreaView>;
 }
 
 const styles = StyleSheet.create({
