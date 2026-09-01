@@ -35,6 +35,13 @@
           "resizeMode": "contain"
         }
       ],
+      [
+        "expo-image-picker",
+        {
+          "microphonePermission": false,
+          "photosPermission": "QueueUp uses your photos for your profile picture."
+        }
+      ],
       "expo-audio"
     ],
     "experiments": {

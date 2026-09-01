@@ -6,7 +6,7 @@ import { SessionUser, UserSummary } from '@/types';
 type AvatarUser = Pick<UserSummary, 'display_name' | 'picture_url'> | Pick<SessionUser, 'display_name'>;
 
 export function PlayerAvatar({ user, size = 42, pictureUrl: pictureUrlOverride }: { user: AvatarUser; size?: number; pictureUrl?: string | null }) {
-  const pictureUrl = resolveServerUrl(pictureUrlOverride ?? ('picture_url' in user ? user.picture_url : null));
+  const pictureUrl = resolveServerUrl(pictureUrlOverride !== undefined ? pictureUrlOverride : ('picture_url' in user ? user.picture_url : null));
   const initial = user.display_name.trim().charAt(0).toUpperCase() || '?';
   const radius = size / 2;
 

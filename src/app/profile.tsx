@@ -86,6 +86,15 @@ export default function ProfileScreen() {
         <Text style={styles.username}>@{player.username}</Text>
       </View>
 
+      <View style={styles.profileMenu}>
+        <Pressable accessibilityHint="Edit your display name or profile picture" accessibilityRole="button" onPress={() => router.push('/profile/edit')} style={({ pressed }) => [styles.settingsRow, pressed && styles.pressed]}>
+          <View><Text style={styles.settingsTitle}>Edit profile</Text><Text style={styles.settingsCopy}>Name and profile picture</Text></View><ArrowRight color={colors.brandLight} size={20} />
+        </Pressable>
+        <Pressable accessibilityHint="Opens account and app settings" accessibilityRole="button" onPress={() => router.push('/settings')} style={({ pressed }) => [styles.settingsRow, pressed && styles.pressed]}>
+          <View><Text style={styles.settingsTitle}>Settings</Text><Text style={styles.settingsCopy}>Account and app preferences</Text></View><ArrowRight color={colors.brandLight} size={20} />
+        </Pressable>
+      </View>
+
       <View style={styles.metricGrid}>
         <ProfileMetric label="Wins" value={metrics.wins} />
         <ProfileMetric label="Podiums" value={metrics.podiums} />
@@ -94,10 +103,6 @@ export default function ProfileScreen() {
         <ProfileMetric label="Avg place" value={metrics.average_placement ? metrics.average_placement.toFixed(1) : '—'} />
         <ProfileMetric label="Rounds" value={metrics.round_count} />
       </View>
-
-      <Pressable accessibilityHint="Opens account and app settings" accessibilityRole="button" onPress={() => router.push('/settings')} style={({ pressed }) => [styles.settingsRow, pressed && styles.pressed]}>
-        <View><Text style={styles.settingsTitle}>Settings</Text><Text style={styles.settingsCopy}>Account and app preferences</Text></View><ArrowRight color={colors.brandLight} size={20} />
-      </Pressable>
 
       <View><Text style={styles.sectionTitle}>Badges</Text>{profile.badges.length ? <View style={styles.badgeGrid}>{profile.badges.map((badge) => <BadgeCard badge={badge} key={badge.key} />)}</View> : <Text style={styles.emptyCopy}>Achievements will appear here as you play.</Text>}</View>
 
@@ -120,6 +125,7 @@ const styles = StyleSheet.create({
   metricValue: { color: colors.text, fontSize: 25, fontWeight: '900' },
   metricLabel: { color: colors.textMuted, fontSize: 12, marginTop: Spacing.xs },
   settingsRow: { alignItems: 'center', backgroundColor: colors.surfaceElevated, borderColor: colors.border, borderRadius: Radii.medium, borderWidth: 1, flexDirection: 'row', justifyContent: 'space-between', minHeight: 72, paddingHorizontal: Spacing.lg },
+  profileMenu: { gap: Spacing.sm },
   settingsTitle: { color: colors.text, fontSize: 16, fontWeight: '800' },
   settingsCopy: { color: colors.textMuted, fontSize: 13, marginTop: 3 },
   sectionTitle: { color: colors.text, fontSize: 21, fontWeight: '800', marginBottom: Spacing.md },

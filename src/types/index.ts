@@ -229,6 +229,17 @@ export interface ProfileResponse {
   prestige_badges: ProfilePrestigeBadge[];
 }
 
+export interface ProfileUpdateResponse {
+  display_name: string;
+  email: string;
+  picture_url: string | null;
+}
+
+export interface ProfilePictureResponse {
+  picture_url: string | null;
+  removed?: boolean;
+}
+
 /** User data returned by the session endpoint. Extra backend fields are preserved. */
 export interface SessionUser {
   id: number;

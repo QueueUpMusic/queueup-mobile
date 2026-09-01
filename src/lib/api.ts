@@ -19,6 +19,8 @@ import {
   LoginPayload,
   OnboardingResponse,
   ProfileResponse,
+  ProfilePictureResponse,
+  ProfileUpdateResponse,
   RoundDetailResponse,
   SeasonsResponse,
   SignupPayload,
@@ -218,6 +220,10 @@ export async function getProfile(username: string, seasonId?: number): Promise<P
   return apiGet<ProfileResponse>(`profiles/${encodeURIComponent(username)}/${query}`);
 }
 
+export function updateProfile(payload: { display_name?: string; email?: string }): Promise<ProfileUpdateResponse> {
+  return apiMutation<ProfileUpdateResponse>('profile/', 'POST', payload);
+}
+
 export async function getRoundDetail(roundId: number): Promise<RoundDetailResponse> {
   return apiGet<RoundDetailResponse>(`rounds/${roundId}/`);
 }
@@ -275,6 +281,44 @@ export async function apiMutation<T, U = unknown>(path: string, method: 'POST' |
     if (error instanceof ApiError) throw error;
     throw ApiError.networkError(error instanceof Error ? error.message : 'Unknown API error');
   }
+}
+
+export async function apiRawUpload<T>(path: string, body: ArrayBuffer, filename: string, contentType: string): Promise<T> {
+  const token = await ensureCsrfToken();
+  try {
+    const response = await fetch(buildUrl(path), {
+      ...defaultFetchOptions,
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': token,
+        'X-QueueUp-Raw-Upload': '1',
+        'X-QueueUp-Filename': encodeURIComponent(filename),
+        'Content-Type': contentType,
+        ...(Platform.OS === 'web' ? {} : { Origin: getCurrentServer() }),
+      },
+      body: body as BodyInit,
+    });
+    return (await handleResponse<T>(response)).data;
+  } catch (error) {
+    if (error instanceof ApiError) throw error;
+    throw ApiError.networkError(error instanceof Error ? error.message : 'Unknown API error');
+  }
+}
+
+export async function uploadProfilePicture(asset: { uri: string; name: string; type: string }): Promise<ProfilePictureResponse> {
+  let localResponse: Response;
+  try {
+    localResponse = await fetch(asset.uri);
+  } catch (error) {
+    throw ApiError.networkError(error instanceof Error ? error.message : 'Unable to read the selected image.', error instanceof Error ? error : undefined);
+  }
+  if (!localResponse.ok) throw ApiError.networkError('Unable to read the selected image.');
+  const body = await localResponse.arrayBuffer();
+  return apiRawUpload<ProfilePictureResponse>('profile/picture/', body, asset.name, asset.type);
+}
+
+export function removeProfilePicture(): Promise<ProfilePictureResponse> {
+  return apiMutation<ProfilePictureResponse>('profile/picture/', 'DELETE');
 }
 
 export function login(payload: LoginPayload): Promise<SessionResponse> {
