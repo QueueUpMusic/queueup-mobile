@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Action, ErrorMessage } from '@/components/auth-ui';
@@ -8,6 +8,7 @@ import { ArrowRight, ChevronLeft } from '@/components/queueup-icon';
 import { colors, Radii, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/auth';
 import { getProfile } from '@/lib/api';
+import { useLiveRefresh } from '@/hooks/use-live-refresh';
 import { ApiError, ProfileBadge, ProfileResponse } from '@/types';
 
 function formatAverage(value: number): string { return value.toFixed(2); }
@@ -48,10 +49,13 @@ export default function ProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<ApiError | null>(null);
+  const requestInFlight = useRef(false);
 
-  const load = useCallback(async (pull = false) => {
+  const load = useCallback(async (pull = false, background = false) => {
     if (!user) return;
-    if (pull) setRefreshing(true); else setLoading(true);
+    if (requestInFlight.current) return;
+    requestInFlight.current = true;
+    if (pull) setRefreshing(true); else if (!background) setLoading(true);
     setError(null);
     try {
       setProfile(await getProfile(user.username));
@@ -62,12 +66,14 @@ export default function ProfileScreen() {
         await refreshSession();
       } else setError(apiError);
     } finally {
-      setLoading(false);
+      if (!background) setLoading(false);
       setRefreshing(false);
+      requestInFlight.current = false;
     }
   }, [refreshSession, user]);
 
   useFocusEffect(useCallback(() => { void load(); }, [load]));
+  useLiveRefresh(() => load(false, true), null);
 
   if (loading && !profile) return <View style={styles.screen}><ProfileHeader onBack={() => router.back()} /><View style={styles.centerState}><ActivityIndicator color={colors.brand} /></View></View>;
   if (error && !profile) return <View style={styles.screen}><ProfileHeader onBack={() => router.back()} /><View style={styles.centerState}><Text style={styles.errorTitle}>Profile is taking a moment</Text><ErrorMessage message="We couldn’t load your profile right now." /><Action onPress={() => void load()}>Try again</Action></View></View>;

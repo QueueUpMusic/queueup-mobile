@@ -9,6 +9,7 @@ import { colors, Radii, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/auth';
 import { getDashboard } from '@/lib/api';
 import { ApiError, DashboardResponse, RoundSummary, SubmissionTrack } from '@/types';
+import { useLiveRefresh } from '@/hooks/use-live-refresh';
 
 function formatDate(value: string | null) {
   if (!value) return 'Not set';
@@ -109,10 +110,10 @@ export default function HomeScreen() {
   const [error, setError] = useState<ApiError | null>(null);
   const requestInFlight = useRef(false);
 
-  const load = useCallback(async (pull = false) => {
+  const load = useCallback(async (pull = false, background = false) => {
     if (requestInFlight.current) return;
     requestInFlight.current = true;
-    if (pull) setRefreshing(true); else setLoading(true);
+    if (pull) setRefreshing(true); else if (!background) setLoading(true);
     setError(null);
     try {
       setDashboard(await getDashboard());
@@ -122,10 +123,12 @@ export default function HomeScreen() {
       else setError(apiError);
     } finally {
       requestInFlight.current = false;
-      setLoading(false);
+    if (!background) setLoading(false);
       setRefreshing(false);
     }
   }, [refreshSession]);
+
+  useLiveRefresh(() => load(false, true), 20000);
 
   useEffect(() => {
     const timer = setTimeout(() => { void load(); }, 0);

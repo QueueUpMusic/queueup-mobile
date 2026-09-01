@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, Image, Linking, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -7,6 +7,7 @@ import { ChevronLeft } from '@/components/queueup-icon';
 import { colors, Radii, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/auth';
 import { getRoundDetail } from '@/lib/api';
+import { useLiveRefresh } from '@/hooks/use-live-refresh';
 import { ApiError, RevealedSubmission, RoundDetailResponse, RoundSummary, SubmissionTrack } from '@/types';
 
 function formatDate(value: string | null) { return value ? new Date(value).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : 'Not set'; }
@@ -69,19 +70,24 @@ export default function RoundDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<ApiError | null>(null);
+  const requestInFlight = useRef(false);
 
-  const load = useCallback(async (pull = false) => {
+  const load = useCallback(async (pull = false, background = false) => {
     const roundId = Number(id);
     if (!Number.isInteger(roundId) || roundId < 1) { setError(ApiError.fromHttpStatus(404, 'This round could not be found.')); setLoading(false); return; }
-    if (pull) setRefreshing(true); else setLoading(true);
+    if (requestInFlight.current) return;
+    requestInFlight.current = true;
+    if (pull) setRefreshing(true); else if (!background) setLoading(true);
     setError(null);
     try { setDetail(await getRoundDetail(roundId)); } catch (cause) {
       const apiError = cause instanceof ApiError ? cause : ApiError.networkError('Unable to load this round.');
       if (apiError.statusCode === 401) await refreshSession(); else setError(apiError);
-    } finally { setLoading(false); setRefreshing(false); }
+    } finally { requestInFlight.current = false; if (!background) setLoading(false); setRefreshing(false); }
   }, [id, refreshSession]);
 
   useFocusEffect(useCallback(() => { void load(); }, [load]));
+
+  useLiveRefresh(() => load(false, true), detail && ['submitting', 'voting', 'locked'].includes(detail.round.state) ? 20000 : null);
 
   if (loading && !detail) return <SafeAreaView edges={['top', 'bottom']} style={styles.screen}><View style={styles.loading}><ActivityIndicator color={colors.brand} /></View></SafeAreaView>;
   if (error && !detail) return <SafeAreaView edges={['top', 'bottom']} style={styles.screen}><View style={styles.errorState}><Text style={styles.errorTitle}>{error.statusCode === 404 ? 'Round not found' : 'Round is unavailable'}</Text><ErrorMessage message={error.isNetworkError ? 'We couldn’t reach QueueUp. Check your connection and try again.' : 'We couldn’t load this round right now.'} /><Action onPress={() => void load()}>Try again</Action><Action secondary onPress={() => router.back()}>Back home</Action></View></SafeAreaView>;

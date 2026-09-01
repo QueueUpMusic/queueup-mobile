@@ -9,6 +9,7 @@ import { colors, Radii, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/auth';
 import { acceptSubmissionRules, createSubmission, getRoundDetail, getSubmissionStatus, searchSpotify } from '@/lib/api';
 import { ApiError, RoundSummary, SpotifySearchTrack, SubmissionTrack } from '@/types';
+import { useLiveRefresh } from '@/hooks/use-live-refresh';
 
 type ScreenState = 'search' | 'review' | 'success';
 const queueUpLogo = require('../../../../assets/images/queueup-logo.png');
@@ -56,8 +57,11 @@ export default function SubmitSongScreen() {
   const [searchError, setSearchError] = useState<ApiError | null>(null);
   const [preview, setPreview] = useState<SpotifySearchTrack | null>(null);
   const requestId = useRef(0);
+  const requestInFlight = useRef(false);
   const load = useCallback(async () => {
     if (!Number.isInteger(roundId) || roundId < 1) { setError(ApiError.fromHttpStatus(404, 'This round could not be found.')); setLoading(false); return; }
+    if (requestInFlight.current) return;
+    requestInFlight.current = true;
     setLoading(true); setError(null);
     try {
       const [detail, status] = await Promise.all([getRoundDetail(roundId), getSubmissionStatus(roundId)]);
@@ -69,10 +73,24 @@ export default function SubmitSongScreen() {
       const apiError = cause instanceof ApiError ? cause : ApiError.networkError('Unable to load this submission flow.');
       if (apiError.statusCode === 401) await refreshSession();
       setError(apiError);
-    } finally { setLoading(false); }
+    } finally { requestInFlight.current = false; setLoading(false); }
   }, [refreshSession, roundId]);
 
   useEffect(() => { const timer = setTimeout(() => { void load(); }, 0); return () => clearTimeout(timer); }, [load]);
+
+  const refreshAvailability = useCallback(async () => {
+    try {
+      const status = await getSubmissionStatus(roundId);
+      setRound(status.round);
+      setExistingSubmission(status.submission);
+      setCanSubmit(status.can_submit);
+      setRulesAccepted(status.submission_rules_accepted);
+    } catch (cause) {
+      if (cause instanceof ApiError && cause.statusCode === 401) await refreshSession();
+    }
+  }, [refreshSession, roundId]);
+
+  useLiveRefresh(refreshAvailability, round && ['submitting', 'voting'].includes(round.state) ? 20000 : null);
 
   useEffect(() => {
     const trimmed = query.trim();

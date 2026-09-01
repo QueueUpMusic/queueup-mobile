@@ -8,6 +8,7 @@ import { defaultSeasonId, SeasonPicker } from '@/components/season-picker';
 import { colors, Radii, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/auth';
 import { getArchive, getSeasons } from '@/lib/api';
+import { useLiveRefresh } from '@/hooks/use-live-refresh';
 import { ApiError, ArchiveResponse, RoundSummary, SeasonSummary } from '@/types';
 
 function formatRevealDate(value: string | null) {
@@ -34,10 +35,10 @@ export default function ArchiveScreen() {
   const [error, setError] = useState<ApiError | null>(null);
   const requestInFlight = useRef(false);
 
-  const load = useCallback(async (pull = false) => {
+  const load = useCallback(async (pull = false, background = false) => {
     if (requestInFlight.current) return;
     requestInFlight.current = true;
-    if (pull) setRefreshing(true); else setLoading(true);
+    if (pull) setRefreshing(true); else if (!background) setLoading(true);
     setError(null);
     try {
       const [seasonData, archiveData] = await Promise.all([getSeasons(), getArchive()]);
@@ -54,12 +55,13 @@ export default function ArchiveScreen() {
       }
     } finally {
       requestInFlight.current = false;
-      setLoading(false);
+      if (!background) setLoading(false);
       setRefreshing(false);
     }
   }, [refreshSession]);
 
   useFocusEffect(useCallback(() => { void load(); }, [load]));
+  useLiveRefresh(() => load(false, true), null);
 
   const selectSeason = useCallback((seasonId: number) => {
     setSelectedSeasonId(seasonId);

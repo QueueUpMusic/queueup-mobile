@@ -8,6 +8,7 @@ import { colors, Radii, Spacing } from '@/constants/theme';
 import { resolveServerUrl } from '@/config/server';
 import { useAuth } from '@/context/auth';
 import { getLeaderboard } from '@/lib/api';
+import { useLiveRefresh } from '@/hooks/use-live-refresh';
 import { ApiError, LeaderboardEntry, LeaderboardResponse, SeasonSummary, UserSummary } from '@/types';
 
 function formatSeasonDate(value: string | null): string {
@@ -59,10 +60,10 @@ export default function RankingsScreen() {
   const [error, setError] = useState<ApiError | null>(null);
   const requestInFlight = useRef(false);
 
-  const load = useCallback(async (seasonId?: number, pull = false) => {
+  const load = useCallback(async (seasonId?: number, pull = false, background = false) => {
     if (requestInFlight.current) return;
     requestInFlight.current = true;
-    if (pull) setRefreshing(true); else setLoading(true);
+    if (pull) setRefreshing(true); else if (!background) setLoading(true);
     setError(null);
     try {
       const next = await getLeaderboard(seasonId);
@@ -78,12 +79,13 @@ export default function RankingsScreen() {
       }
     } finally {
       requestInFlight.current = false;
-      setLoading(false);
+      if (!background) setLoading(false);
       setRefreshing(false);
     }
   }, [refreshSession]);
 
   useFocusEffect(useCallback(() => { void load(); }, [load]));
+  useLiveRefresh(() => load(selectedSeasonId ?? undefined, false, true), null);
 
   const selectSeason = useCallback((seasonId: number) => {
     setSelectedSeasonId(seasonId);

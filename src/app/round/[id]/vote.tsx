@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -9,6 +9,7 @@ import { useAuth } from '@/context/auth';
 import { SpotifyEmbed } from '@/components/spotify-preview-modal';
 import { acknowledgeVotingGuide, getRoundDetail, saveVote } from '@/lib/api';
 import { ApiError, RoundDetailResponse } from '@/types';
+import { useLiveRefresh } from '@/hooks/use-live-refresh';
 
 function Header({ onBack }: { onBack: () => void }) {
   return <View style={styles.header}><Pressable accessibilityLabel="Go to home" accessibilityRole="button" hitSlop={8} onPress={onBack} style={styles.back}><ChevronLeft color={colors.brand} size={24} /><Text style={styles.backLabel}>Home</Text></Pressable><Text style={styles.headerTitle}>Rate songs</Text><View style={styles.headerSpacer} /></View>;
@@ -36,9 +37,12 @@ export default function VoteScreen() {
   const [closed, setClosed] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
   const [savingGuide, setSavingGuide] = useState(false);
+  const requestInFlight = useRef(false);
   const load = useCallback(async () => {
     const roundId = Number(id);
     if (!Number.isInteger(roundId) || roundId < 1) { setError(ApiError.fromHttpStatus(404, 'This round could not be found.')); setLoading(false); return; }
+    if (requestInFlight.current) return;
+    requestInFlight.current = true;
     setLoading(true); setError(null);
     try {
       const next = await getRoundDetail(roundId);
@@ -52,7 +56,7 @@ export default function VoteScreen() {
     } catch (cause) {
       const apiError = cause instanceof ApiError ? cause : ApiError.networkError('Unable to load your ballot.');
       if (apiError.statusCode === 401) await refreshSession(); else setError(apiError);
-    } finally { setLoading(false); }
+    } finally { requestInFlight.current = false; setLoading(false); }
   }, [id, refreshSession, review, router]);
 
   useFocusEffect(useCallback(() => { void load(); }, [load]));
@@ -62,6 +66,19 @@ export default function VoteScreen() {
   const currentScore = current ? scores[String(current.id)] : undefined;
   const isVoting = detail?.round.state === 'voting' && !closed;
   const displayProgress = useMemo(() => `${progress.voted} of ${progress.total} rated`, [progress]);
+
+  const refreshVotingState = useCallback(async () => {
+    try {
+      const next = await getRoundDetail(Number(id));
+      setDetail((current) => current ? { ...current, round: next.round } : next);
+      setClosed(next.round.state !== 'voting');
+      setProgress({ voted: next.ballot.voted_count, total: next.ballot.eligible_count, complete: next.ballot.complete });
+    } catch (cause) {
+      if (cause instanceof ApiError && cause.statusCode === 401) await refreshSession();
+    }
+  }, [id, refreshSession]);
+
+  useLiveRefresh(refreshVotingState, isVoting ? 20000 : null);
 
   const continueFromGuide = async () => {
     setSavingGuide(true);
