@@ -23,6 +23,7 @@ import {
   ProfileUpdateResponse,
   RoundDetailResponse,
   SeasonsResponse,
+  SeasonRecapResponse,
   SignupPayload,
   SessionResponse,
   SpotifySearchResponse,
@@ -208,6 +209,10 @@ export async function getSeasons(): Promise<SeasonsResponse> {
 
 export async function getArchive(): Promise<ArchiveResponse> {
   return apiGet<ArchiveResponse>('archive/');
+}
+
+export async function getSeasonRecap(seasonId: number): Promise<SeasonRecapResponse> {
+  return apiGet<SeasonRecapResponse>(`seasons/${seasonId}/recap/`);
 }
 
 export async function getLeaderboard(seasonId?: number): Promise<LeaderboardResponse> {

@@ -54,6 +54,7 @@ export interface SeasonSummary {
   ends_at: string | null;
   active: boolean;
   banner_url: string | null;
+  recap?: { available: boolean; viewed: boolean };
 }
 
 export interface RoundHostSummary {
@@ -173,7 +174,46 @@ export interface SeasonsResponse {
 }
 
 export interface ArchiveResponse {
+  seasons?: (SeasonSummary & { recap: { available: boolean; viewed: boolean } })[];
   rounds: RoundSummary[];
+}
+
+export interface RecapSong extends SubmissionTrack {
+  art?: string | null;
+  prompt?: string;
+  place?: number;
+  place_label?: string;
+  average?: number;
+  ratings?: number;
+  low?: number;
+  high?: number;
+  disagreement?: number;
+}
+
+export interface RecapStanding {
+  player: UserSummary;
+  score: number;
+  place: number;
+  tied: boolean;
+  place_label: string;
+}
+
+export type RecapSlide =
+  | { kind: 'intro'; round_count: number; song_count: number }
+  | { kind: 'standing'; place: number; league_size: number; points: number; podiums: number; wins: number; top_half: number; played: number }
+  | { kind: 'best_submission'; song: RecapSong }
+  | { kind: 'taste'; song: RecapSong | null; favorite_artist: string | null; favorite_genre: string | null }
+  | { kind: 'voting'; average: number; league_average: number | null; five_stars: number; ratings: number; personality: string | null }
+  | { kind: 'story'; best_finish: string; round_prompt: string; top_half: number; played: number }
+  | { kind: 'chaos'; song: RecapSong }
+  | { kind: 'league'; song_count: number; rating_count: number; round_count: number; top_song: RecapSong | null }
+  | { kind: 'summary'; standing: RecapStanding | null; best_submission: SubmissionTrack | null; song_of_season: SubmissionTrack | null; favorite_artist: string | null; podiums: number; wins: number; round_count: number };
+
+export interface SeasonRecapResponse {
+  season: SeasonSummary;
+  slides: RecapSlide[];
+  summary: Extract<RecapSlide, { kind: 'summary' }>;
+  viewed: true;
 }
 
 export interface LeaderboardEntry {

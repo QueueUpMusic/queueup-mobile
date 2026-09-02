@@ -33,6 +33,10 @@ export function ArrowRight({ color, size = 19 }: { color: ColorValue; size?: num
   </Svg>;
 }
 
+export function ShareIcon({ color, size = 20 }: { color: ColorValue; size?: number }) {
+  return <Svg accessibilityLabel="Share" fill="none" height={size} viewBox="0 0 24 24" width={size}><Path d="M12 15V3m0 0L7.5 7.5M12 3l4.5 4.5M5 12v7h14v-7" stroke={color} strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.9} /></Svg>;
+}
+
 export function ChevronLeft({ color, size = 24 }: { color: ColorValue; size?: number }) {
   return <Svg accessibilityLabel="Go back" fill="none" height={size} viewBox="0 0 24 24" width={size}>
     <Path d="m15 5-7 7 7 7" stroke={color} strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.1} />
@@ -70,6 +74,10 @@ export function StarIcon({ color, filled = false, size = 30 }: { color: ColorVal
   return <Svg accessibilityLabel={filled ? 'Rated star' : 'Unrated star'} fill={filled ? color : 'none'} height={size} viewBox="0 0 24 24" width={size}>
     <Path d="m12 3 2.78 5.63 6.22.9-4.5 4.39 1.06 6.2L12 17.2l-5.56 2.92 1.06-6.2L3 9.53l6.22-.9L12 3Z" stroke={color} strokeLinejoin="round" strokeWidth={1.7} />
   </Svg>;
+}
+
+export function SparkleIcon({ color, size = 25 }: { color: ColorValue; size?: number }) {
+  return <Svg accessibilityLabel="Season recap" fill={color} height={size} viewBox="0 0 24 24" width={size}><Path d="M12 2.2c.45 5.45 4.35 9.35 9.8 9.8-5.45.45-9.35 4.35-9.8 9.8-.45-5.45-4.35-9.35-9.8-9.8 5.45-.45 9.35-4.35 9.8-9.8Z" /></Svg>;
 }
 
 export function SettingsIcon({ color, size = 22 }: { color: ColorValue; size?: number }) {

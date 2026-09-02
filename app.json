@@ -42,7 +42,8 @@
           "photosPermission": "QueueUp uses your photos for your profile picture."
         }
       ],
-      "expo-audio"
+      "expo-audio",
+      "expo-sharing"
     ],
     "experiments": {
       "typedRoutes": true,

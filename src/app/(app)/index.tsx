@@ -4,11 +4,12 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { Action, ErrorMessage } from '@/components/auth-ui';
 import { PlayerHeader } from '@/components/player-header';
 import { ArrowRight, Checkmark } from '@/components/queueup-icon';
+import { RecapBanner } from '@/components/recap-banner';
 import { resolveServerUrl } from '@/config/server';
 import { colors, Radii, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/auth';
-import { getDashboard } from '@/lib/api';
-import { ApiError, DashboardResponse, RoundSummary, SubmissionTrack } from '@/types';
+import { getArchive, getDashboard } from '@/lib/api';
+import { ApiError, DashboardResponse, RoundSummary, SeasonSummary, SubmissionTrack } from '@/types';
 import { useLiveRefresh } from '@/hooks/use-live-refresh';
 
 function formatDate(value: string | null) {
@@ -103,8 +104,10 @@ function RoundCard({ round, submission, isResults = false }: { round: RoundSumma
 }
 
 export default function HomeScreen() {
+  const router = useRouter();
   const { refresh: refreshSession } = useAuth();
   const [dashboard, setDashboard] = useState<DashboardResponse | null>(null);
+  const [unseenRecap, setUnseenRecap] = useState<SeasonSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<ApiError | null>(null);
@@ -116,7 +119,16 @@ export default function HomeScreen() {
     if (pull) setRefreshing(true); else if (!background) setLoading(true);
     setError(null);
     try {
-      setDashboard(await getDashboard());
+      const dashboardResult = await getDashboard();
+      setDashboard(dashboardResult);
+      try {
+        const archive = await getArchive();
+        const recapSeason = (archive.seasons ?? []).find((season) => season.recap.available && !season.recap.viewed);
+        setUnseenRecap(recapSeason ?? null);
+      } catch {
+        // Archive recap metadata is additive; an older server should not break Home.
+        setUnseenRecap(null);
+      }
     } catch (cause) {
       const apiError = cause instanceof ApiError ? cause : ApiError.networkError('Unable to load your QueueUp home.');
       if (apiError.statusCode === 401) await refreshSession();
@@ -142,7 +154,7 @@ export default function HomeScreen() {
 
   const current = dashboard?.current_round;
   const results = dashboard?.results_round;
-  return <View style={styles.screen}><PlayerHeader /><ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl colors={[colors.brand]} onRefresh={() => void load(true)} refreshing={refreshing} tintColor={colors.brand} />} style={styles.scroll}>{error ? <Text style={styles.muted}>Some updates may be unavailable. Pull to try again.</Text> : null}{current ? <><Text style={styles.section}>Current round</Text><RoundCard round={current} submission={dashboard?.my_submission ?? null} /></> : null}{results ? <><Text style={styles.section}>Recent results</Text><RoundCard isResults round={results} submission={null} /></> : null}{!current && !results ? <View style={styles.empty}><Text style={styles.title}>No round yet</Text><Text style={styles.body}>There isn’t a current or recently revealed round to show.</Text></View> : null}</ScrollView></View>;
+  return <View style={styles.screen}><PlayerHeader /><ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl colors={[colors.brand]} onRefresh={() => void load(true)} refreshing={refreshing} tintColor={colors.brand} />} style={styles.scroll}>{error ? <Text style={styles.muted}>Some updates may be unavailable. Pull to try again.</Text> : null}{unseenRecap ? <RecapBanner onPress={() => router.push(`/season/${unseenRecap.id}/recap` as never)} season={unseenRecap} /> : null}{current ? <><Text style={styles.section}>Current round</Text><RoundCard round={current} submission={dashboard?.my_submission ?? null} /></> : null}{results ? <><Text style={styles.section}>Recent results</Text><RoundCard isResults round={results} submission={null} /></> : null}{!current && !results ? <View style={styles.empty}><Text style={styles.title}>No round yet</Text><Text style={styles.body}>There isn’t a current or recently revealed round to show.</Text></View> : null}</ScrollView></View>;
 }
 
 const styles = StyleSheet.create({

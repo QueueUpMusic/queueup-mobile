@@ -4,6 +4,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { Action, ErrorMessage } from '@/components/auth-ui';
 import { PlayerHeader } from '@/components/player-header';
 import { ArrowRight } from '@/components/queueup-icon';
+import { RecapBanner } from '@/components/recap-banner';
 import { defaultSeasonId, SeasonPicker } from '@/components/season-picker';
 import { colors, Radii, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/auth';
@@ -26,6 +27,7 @@ function ArchiveRoundCard({ round }: { round: RoundSummary }) {
 }
 
 export default function ArchiveScreen() {
+  const router = useRouter();
   const { refresh: refreshSession } = useAuth();
   const [seasons, setSeasons] = useState<SeasonSummary[]>([]);
   const [archive, setArchive] = useState<ArchiveResponse | null>(null);
@@ -42,7 +44,8 @@ export default function ArchiveScreen() {
     setError(null);
     try {
       const [seasonData, archiveData] = await Promise.all([getSeasons(), getArchive()]);
-      setSeasons(seasonData.seasons);
+      const recapBySeason = new Map((archiveData.seasons ?? []).map((season) => [season.id, season.recap]));
+      setSeasons(seasonData.seasons.map((season) => ({ ...season, recap: recapBySeason.get(season.id) })));
       setArchive(archiveData);
       setSelectedSeasonId((current) => seasonData.seasons.some((season) => season.id === current) ? current : defaultSeasonId(seasonData.seasons));
     } catch (cause) {
@@ -81,7 +84,8 @@ export default function ArchiveScreen() {
       {error ? <View style={styles.inlineError}><Text style={styles.inlineErrorText}>Some archive updates may be unavailable. Pull to try again.</Text></View> : null}
       {seasons.length ? <SeasonPicker onSelect={selectSeason} seasons={seasons} selectedId={selectedSeasonId ?? seasons[0].id} /> : null}
       {!seasons.length ? <View style={styles.empty}><Text style={styles.emptyTitle}>No seasons yet</Text><Text style={styles.emptyCopy}>Completed rounds will appear here when a season begins.</Text></View> : null}
-      {selectedSeason && !rounds.length ? <View style={styles.empty}><Text style={styles.emptyTitle}>No rounds yet</Text><Text style={styles.emptyCopy}>Revealed rounds from this season will appear here.</Text></View> : null}
+      {selectedSeason && !rounds.length ? <View style={styles.empty}><Text style={styles.emptyTitle}>No completed rounds yet</Text><Text style={styles.emptyCopy}>The current round will appear here after it is revealed.</Text></View> : null}
+      {selectedSeason?.recap?.available ? <RecapBanner onPress={() => router.push(`/season/${selectedSeason.id}/recap` as never)} season={selectedSeason} /> : null}
       {rounds.length ? <View style={styles.roundList}>{rounds.map((round) => <ArchiveRoundCard key={round.id} round={round} />)}</View> : null}
       {selectedSeason ? <Text style={styles.seasonNote}>{selectedSeason.name}</Text> : null}
     </ScrollView>
