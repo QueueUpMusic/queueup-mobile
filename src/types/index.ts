@@ -162,11 +162,19 @@ export interface RoundDetailResponse {
   results?: RevealedSubmission[];
 }
 
+export interface HomepageCountdown {
+  id: number;
+  title: string;
+  target_at: string;
+  state: 'counting_down' | 'expired';
+}
+
 export interface DashboardResponse {
   cards: { kind: 'current' | 'results'; round: RoundSummary }[];
   current_round: RoundSummary | null;
   results_round: RoundSummary | null;
   my_submission: SubmissionTrack | null;
+  countdowns: HomepageCountdown[];
 }
 
 export interface SeasonsResponse {

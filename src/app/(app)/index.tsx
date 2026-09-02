@@ -5,6 +5,7 @@ import { Action, ErrorMessage } from '@/components/auth-ui';
 import { PlayerHeader } from '@/components/player-header';
 import { ArrowRight, Checkmark } from '@/components/queueup-icon';
 import { RecapBanner } from '@/components/recap-banner';
+import { HomepageCountdowns } from '@/components/homepage-countdown';
 import { resolveServerUrl } from '@/config/server';
 import { colors, Radii, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/auth';
@@ -154,7 +155,7 @@ export default function HomeScreen() {
 
   const current = dashboard?.current_round;
   const results = dashboard?.results_round;
-  return <View style={styles.screen}><PlayerHeader /><ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl colors={[colors.brand]} onRefresh={() => void load(true)} refreshing={refreshing} tintColor={colors.brand} />} style={styles.scroll}>{error ? <Text style={styles.muted}>Some updates may be unavailable. Pull to try again.</Text> : null}{unseenRecap ? <RecapBanner onPress={() => router.push(`/season/${unseenRecap.id}/recap` as never)} season={unseenRecap} /> : null}{current ? <><Text style={styles.section}>Current round</Text><RoundCard round={current} submission={dashboard?.my_submission ?? null} /></> : null}{results ? <><Text style={styles.section}>Recent results</Text><RoundCard isResults round={results} submission={null} /></> : null}{!current && !results ? <View style={styles.empty}><Text style={styles.title}>No round yet</Text><Text style={styles.body}>There isn’t a current or recently revealed round to show.</Text></View> : null}</ScrollView></View>;
+  return <View style={styles.screen}><PlayerHeader /><ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl colors={[colors.brand]} onRefresh={() => void load(true)} refreshing={refreshing} tintColor={colors.brand} />} style={styles.scroll}>{error ? <Text style={styles.muted}>Some updates may be unavailable. Pull to try again.</Text> : null}{dashboard?.countdowns?.length ? <HomepageCountdowns countdowns={dashboard.countdowns} onReachedZero={() => void load(false, true)} /> : null}{unseenRecap ? <RecapBanner onPress={() => router.push(`/season/${unseenRecap.id}/recap` as never)} season={unseenRecap} /> : null}{current ? <><Text style={styles.section}>Current round</Text><RoundCard round={current} submission={dashboard?.my_submission ?? null} /></> : null}{results ? <><Text style={styles.section}>Recent results</Text><RoundCard isResults round={results} submission={null} /></> : null}{!current && !results ? <View style={styles.empty}><Text style={styles.title}>No round yet</Text><Text style={styles.body}>There isn’t a current or recently revealed round to show.</Text></View> : null}</ScrollView></View>;
 }
 
 const styles = StyleSheet.create({
