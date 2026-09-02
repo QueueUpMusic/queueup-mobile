@@ -26,6 +26,7 @@ import {
   SeasonRecapResponse,
   SignupPayload,
   SessionResponse,
+  StaffOverviewResponse,
   SpotifySearchResponse,
   SubmissionStatusResponse,
   SubmissionTrack,
@@ -218,6 +219,10 @@ export async function getSeasonRecap(seasonId: number): Promise<SeasonRecapRespo
 export async function getLeaderboard(seasonId?: number): Promise<LeaderboardResponse> {
   const query = seasonId === undefined ? '' : `?season=${encodeURIComponent(seasonId)}`;
   return apiGet<LeaderboardResponse>(`leaderboard/${query}`);
+}
+
+export function getStaffOverview(): Promise<StaffOverviewResponse> {
+  return apiGet<StaffOverviewResponse>('staff/');
 }
 
 export async function getProfile(username: string, seasonId?: number): Promise<ProfileResponse> {

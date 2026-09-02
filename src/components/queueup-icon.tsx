@@ -3,15 +3,22 @@ import type { ColorValue } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { colors } from '@/constants/theme';
 
-type QueueUpIconName = 'home' | 'archive' | 'rankings' | 'profile';
+type QueueUpIconName = 'home' | 'archive' | 'rankings' | 'profile' | 'admin';
 const symbols = {
   home: { ios: 'house', android: 'home', web: 'home' },
   archive: { ios: 'archivebox', android: 'archive', web: 'archive' },
   rankings: { ios: 'trophy', android: 'emoji_events', web: 'emoji_events' },
   profile: { ios: 'person', android: 'person', web: 'person' },
+  admin: { ios: 'shield.lefthalf.filled', android: 'admin_panel_settings', web: 'admin_panel_settings' },
 } as const;
 
 export function QueueUpIcon({ name, color, size = 22 }: { name: QueueUpIconName; color: ColorValue; size?: number }) {
+  if (name === 'admin') {
+    return <Svg accessibilityLabel="admin tab" fill="none" height={size} viewBox="0 0 24 24" width={size}>
+      <Path d="M12 3 20 6v5.5c0 4.5-3.1 7.9-8 9.5-4.9-1.6-8-5-8-9.5V6l8-3Z" stroke={color} strokeLinejoin="round" strokeWidth={1.9} />
+      <Path d="m8.5 12 2.2 2.2 4.8-4.8" stroke={color} strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.9} />
+    </Svg>;
+  }
   if (name === 'archive') {
     return <Svg accessibilityLabel="archive tab" fill="none" height={size} viewBox="0 0 24 24" width={size}>
       <Path d="M4 7h16v14H4zM3 3h18v4H3z" stroke={color} strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.9} />

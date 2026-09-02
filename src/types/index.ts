@@ -177,6 +177,15 @@ export interface DashboardResponse {
   countdowns: HomepageCountdown[];
 }
 
+export interface StaffOverviewResponse {
+  round_count: number;
+  badge_count: number;
+  season_count: number;
+  user_count: number;
+  signup_url: string;
+  signup_qr: string;
+}
+
 export interface SeasonsResponse {
   seasons: SeasonSummary[];
 }
