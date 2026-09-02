@@ -27,6 +27,8 @@ import {
   SignupPayload,
   SessionResponse,
   StaffOverviewResponse,
+  StaffRound,
+  StaffSeasonsResponse,
   SpotifySearchResponse,
   SubmissionStatusResponse,
   SubmissionTrack,
@@ -223,6 +225,18 @@ export async function getLeaderboard(seasonId?: number): Promise<LeaderboardResp
 
 export function getStaffOverview(): Promise<StaffOverviewResponse> {
   return apiGet<StaffOverviewResponse>('staff/');
+}
+
+export function getStaffSeasons(): Promise<StaffSeasonsResponse> {
+  return apiGet<StaffSeasonsResponse>('staff/seasons/');
+}
+
+export function saveStaffRound(payload: Record<string, unknown>, roundId?: number): Promise<StaffRound> {
+  return apiMutation<StaffRound>(roundId ? `staff/rounds/${roundId}/` : 'staff/rounds/create/', roundId ? 'PATCH' : 'POST', payload);
+}
+
+export function saveStaffSeason(payload: Record<string, unknown>, seasonId?: number): Promise<{ id: number; name: string }> {
+  return apiMutation<{ id: number; name: string }>(seasonId ? `staff/seasons/${seasonId}/` : 'staff/seasons/create/', seasonId ? 'PATCH' : 'POST', payload);
 }
 
 export async function getProfile(username: string, seasonId?: number): Promise<ProfileResponse> {

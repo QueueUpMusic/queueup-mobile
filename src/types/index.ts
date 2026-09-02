@@ -186,6 +186,37 @@ export interface StaffOverviewResponse {
   signup_qr: string;
 }
 
+export interface StaffSeason {
+  id: number;
+  name: string;
+  starts_at: string;
+  ends_at: string;
+  active: boolean;
+  description: string;
+  round_count: number;
+}
+
+export interface StaffSeasonsResponse {
+  seasons: StaffSeason[];
+}
+
+export interface StaffRound {
+  id: number;
+  season_id: number;
+  season: string;
+  prompt: string;
+  details: string;
+  state: string;
+  is_draft: boolean;
+  archived: boolean;
+  submission_count: number;
+  vote_count: number;
+  submitted_player_count: number;
+  completed_voter_count: number;
+  league_player_count: number;
+  playlist_url: string | null;
+}
+
 export interface SeasonsResponse {
   seasons: SeasonSummary[];
 }

@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Action, ErrorMessage } from '@/components/auth-ui';
 import { PlayerHeader } from '@/components/player-header';
@@ -84,9 +84,9 @@ export default function AdminScreen() {
       <View style={styles.intro}><Text style={styles.kicker}>Staff only</Text><Text style={styles.title}>Admin</Text><Text style={styles.subtitle}>League Control</Text></View>
       {error ? <Text style={styles.inlineError}>Some staff data may be out of date. Pull to try again.</Text> : null}
       <View style={styles.metrics}><Metric label="Players" value={overview?.user_count} /><Metric label="Seasons" value={overview?.season_count} /><Metric label="Rounds" value={overview?.round_count} /><Metric label="Badges" value={overview?.badge_count} /></View>
-      <View style={styles.actions}><View style={styles.actionCard}><Text style={styles.actionTitle}>Create Round</Text><Text style={styles.actionCopy}>Staff API is ready for the native round workflow.</Text><Text style={styles.coming}>Next native milestone</Text></View><View style={styles.actionCard}><Text style={styles.actionTitle}>Create Season</Text><Text style={styles.actionCopy}>Staff API is ready for the native season workflow.</Text><Text style={styles.coming}>Next native milestone</Text></View></View>
+      <View style={styles.actions}><Pressable accessibilityRole="button" onPress={() => router.push('/admin/rounds/new' as never)} style={({ pressed }) => [styles.actionCard, pressed && styles.pressed]}><Text style={styles.actionTitle}>Create Round</Text><Text style={styles.actionCopy}>Set the prompt, schedule, and publishing state.</Text><Text style={styles.coming}>Create now →</Text></Pressable><Pressable accessibilityRole="button" onPress={() => router.push('/admin/seasons/new' as never)} style={({ pressed }) => [styles.actionCard, pressed && styles.pressed]}><Text style={styles.actionTitle}>Create Season</Text><Text style={styles.actionCopy}>Start a new season with dates and player-facing details.</Text><Text style={styles.coming}>Create now →</Text></Pressable></View>
       <Text style={styles.section}>Management</Text>
-      <View style={styles.capabilities}>{capabilities.map((item) => <View key={item.title} style={[styles.capability, !item.available && styles.disabledCapability]}><View style={styles.capabilityIcon}><CapabilityIcon color={item.available ? colors.brand : colors.textMuted} kind={item.icon} /></View><View style={styles.capabilityCopy}><Text style={styles.capabilityTitle}>{item.title}</Text><Text style={styles.capabilityDescription}>{item.description}</Text></View>{item.available ? <Text style={styles.available}>API ready</Text> : <Text style={styles.deferred}>Deferred</Text>}</View>)}</View>
+      <View style={styles.capabilities}>{capabilities.map((item) => { const content = <><View style={styles.capabilityIcon}><CapabilityIcon color={item.available ? colors.brand : colors.textMuted} kind={item.icon} /></View><View style={styles.capabilityCopy}><Text style={styles.capabilityTitle}>{item.title}</Text><Text style={styles.capabilityDescription}>{item.description}</Text></View>{item.available ? <Text style={styles.available}>API ready</Text> : <Text style={styles.deferred}>Deferred</Text>}</>; return item.title === 'Seasons' ? <Pressable accessibilityRole="button" key={item.title} onPress={() => router.push('/admin/seasons' as never)} style={({ pressed }) => [styles.capability, pressed && styles.pressed]}>{content}</Pressable> : <View key={item.title} style={[styles.capability, !item.available && styles.disabledCapability]}>{content}</View>; })}</View>
     </ScrollView>
   </View>;
 }
@@ -118,6 +118,7 @@ const styles = StyleSheet.create({
   capabilityDescription: { color: colors.textMuted, fontSize: 12, lineHeight: 17 },
   available: { color: colors.brandLight, fontSize: 10, fontWeight: '800' },
   deferred: { color: colors.textMuted, fontSize: 10, fontWeight: '800' },
+  pressed: { opacity: 0.78 },
   inlineError: { color: colors.warning, fontSize: 13 },
   errorTitle: { color: colors.text, fontSize: 24, fontWeight: '800' },
 });

@@ -39,6 +39,9 @@ function AuthStack() {
       <Stack.Screen name="season/[id]/recap" options={{ animation: 'slide_from_right' }} />
       <Stack.Protected guard={isStaff}>
         <Stack.Screen name="(app)/admin" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="admin/rounds/new" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="admin/seasons" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="admin/seasons/new" options={{ animation: 'slide_from_right' }} />
       </Stack.Protected>
       <Stack.Screen name="profile" options={{ animation: 'slide_from_right' }} />
       <Stack.Screen name="profile/edit" options={{ animation: 'slide_from_right' }} />
