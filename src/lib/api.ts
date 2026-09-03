@@ -29,6 +29,10 @@ import {
   StaffOverviewResponse,
   StaffRound,
   StaffSeasonsResponse,
+  StaffRoundsResponse,
+  StaffPlayersResponse,
+  StaffBadgesResponse,
+  StaffCountdown, StaffCountdownsResponse, StaffNotification, StaffNotificationsResponse, StaffRoundStatus,
   SpotifySearchResponse,
   SubmissionStatusResponse,
   SubmissionTrack,
@@ -230,6 +234,22 @@ export function getStaffOverview(): Promise<StaffOverviewResponse> {
 export function getStaffSeasons(): Promise<StaffSeasonsResponse> {
   return apiGet<StaffSeasonsResponse>('staff/seasons/');
 }
+
+export function getStaffRounds(query = ''): Promise<StaffRoundsResponse> { return apiGet<StaffRoundsResponse>(`staff/rounds/${query ? `?q=${encodeURIComponent(query)}` : ''}`); }
+export function getStaffPlayers(query = ''): Promise<StaffPlayersResponse> { return apiGet<StaffPlayersResponse>(`staff/players/${query ? `?q=${encodeURIComponent(query)}` : ''}`); }
+export function getStaffBadges(query = ''): Promise<StaffBadgesResponse> { return apiGet<StaffBadgesResponse>(`staff/badges/${query ? `?q=${encodeURIComponent(query)}` : ''}`); }
+export function getStaffCountdowns(): Promise<StaffCountdownsResponse> { return apiGet<StaffCountdownsResponse>('staff/countdowns/'); }
+export function saveStaffCountdown(payload: Record<string, unknown>, id?: number): Promise<StaffCountdown> { return apiMutation<StaffCountdown>(id ? `staff/countdowns/${id}/` : 'staff/countdowns/', id ? 'PATCH' : 'POST', payload); }
+export function deleteStaffCountdown(id: number): Promise<{ id: number; deleted: boolean }> { return apiMutation<{ id: number; deleted: boolean }>(`staff/countdowns/${id}/`, 'DELETE'); }
+export function getStaffNotifications(): Promise<StaffNotificationsResponse> { return apiGet<StaffNotificationsResponse>('staff/notifications/'); }
+export function createStaffNotification(payload: Record<string, unknown>): Promise<{ notification: StaffNotification; delivery?: { sent?: number; skipped?: number } }> { return apiMutation<{ notification: StaffNotification; delivery?: { sent?: number; skipped?: number } }>('staff/notifications/', 'POST', payload); }
+export function getStaffRoundStatus(id: number): Promise<StaffRoundStatus> { return apiGet<StaffRoundStatus>(`staff/rounds/${id}/status/`); }
+export function staffRoundAction(id: number, action: string): Promise<{ round_id: number; action: string; state: string }> { return apiMutation(`staff/rounds/${id}/action/`, 'POST', { action }); }
+export function archiveStaffRound(id: number): Promise<Record<string, unknown>> { return apiMutation(`staff/rounds/${id}/archive/`, 'POST'); }
+export function deleteStaffRound(id: number): Promise<{ round_id: number; deleted: boolean }> { return apiMutation(`staff/rounds/${id}/delete/`, 'DELETE'); }
+export function staffPlayerAction(id: number, action: string): Promise<Record<string, unknown>> { return apiMutation(`staff/players/${id}/action/`, 'POST', { action }); }
+export function saveStaffBadge(payload: Record<string, unknown>, id?: number): Promise<{ id: number; name: string; slug: string }> { return apiMutation<{ id: number; name: string; slug: string }>(id ? `staff/badges/${id}/` : 'staff/badges/create/', id ? 'PATCH' : 'POST', payload); }
+export function awardStaffBadge(badgeId: number, userId: number): Promise<{ badge_id: number; user_id: number; awarded: boolean }> { return apiMutation(`staff/badges/${badgeId}/award/${userId}/`, 'POST'); }
 
 export function saveStaffRound(payload: Record<string, unknown>, roundId?: number): Promise<StaffRound> {
   return apiMutation<StaffRound>(roundId ? `staff/rounds/${roundId}/` : 'staff/rounds/create/', roundId ? 'PATCH' : 'POST', payload);

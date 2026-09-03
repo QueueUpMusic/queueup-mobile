@@ -215,7 +215,24 @@ export interface StaffRound {
   completed_voter_count: number;
   league_player_count: number;
   playlist_url: string | null;
+  goes_live_at: string | null;
+  submission_opens: string;
+  submission_deadline: string;
+  voting_deadline: string;
+  reveal_at: string;
+  host: { id: number; username: string; display_name: string; picture_url: string | null } | null;
 }
+export interface StaffRoundsResponse { query: string; rounds: StaffRound[]; }
+export interface StaffPlayer { id: number; username: string; first_name: string; last_name: string; email: string; is_active: boolean; is_staff: boolean; is_superuser: boolean; approved: boolean; play_count: number; picture_url?: string | null; }
+export interface StaffPlayersResponse { query: string; players: StaffPlayer[]; }
+export interface StaffBadge { id: number; name: string; slug: string; description: string; icon: string; achievement_key: string; hidden: boolean; active: boolean; sort_order: number; awarded_user_ids: number[]; }
+export interface StaffBadgesResponse { query: string; badges: StaffBadge[]; }
+export interface StaffCountdown { id: number; title: string; target_at: string; active: boolean; created_at: string; updated_at: string; }
+export interface StaffCountdownsResponse { countdowns: StaffCountdown[]; }
+export interface StaffNotification { id: number; title: string; body: string; destination: string; audience: string; status: string; scheduled_for: string | null; created_at: string; sent_at: string | null; delivery_count: number; }
+export interface StaffNotificationsResponse { notifications: StaffNotification[]; }
+export interface StaffRoundStatusPlayer { id: number; username: string; display_name: string; submitted: boolean; voted_count: number; eligible_count: number; voting_started: boolean; voting_complete: boolean; submission: { id: number; title: string; artist: string } | null; }
+export interface StaffRoundStatus { round_id: number; player_count: number; submitted_count: number; completed_count: number; players: StaffRoundStatusPlayer[]; }
 
 export interface SeasonsResponse {
   seasons: SeasonSummary[];

@@ -38,8 +38,17 @@ function AuthStack() {
       <Stack.Screen name="round/[id]/vote/complete" options={{ animation: 'fade' }} />
       <Stack.Screen name="season/[id]/recap" options={{ animation: 'slide_from_right' }} />
       <Stack.Protected guard={isStaff}>
-        <Stack.Screen name="(app)/admin" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="admin/rounds/new" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="admin/rounds/edit" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="admin/rounds" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="admin/rounds/[id]/stats" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="admin/players" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="admin/badges" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="admin/badges/edit" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="admin/countdowns" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="admin/notifications" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="admin/notifications/new" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="admin/countdowns/edit" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="admin/seasons" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="admin/seasons/new" options={{ animation: 'slide_from_right' }} />
       </Stack.Protected>

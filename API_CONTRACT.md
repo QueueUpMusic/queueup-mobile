@@ -406,6 +406,10 @@ All require `@api_staff_required` (authenticated + staff/superuser).
 | GET | `/api/v1/staff/players/` | List all players with search |
 | GET | `/api/v1/staff/badges/` | List all badges with search |
 | GET | `/api/v1/staff/seasons/` | List all seasons |
+| GET,POST | `/api/v1/staff/countdowns/` | List or create homepage countdowns |
+| PATCH | `/api/v1/staff/countdowns/<pk>/` | Edit a homepage countdown |
+| DELETE | `/api/v1/staff/countdowns/<pk>/` | Delete a homepage countdown |
+| GET,POST | `/api/v1/staff/notifications/` | List blast history or create/send/schedule a blast |
 
 **`/api/v1/staff/` Response:** Includes `playlist_url` always for staff.
 
@@ -413,6 +417,31 @@ All require `@api_staff_required` (authenticated + staff/superuser).
 - Players: search by username, first_name, last_name, email
 - Badges: search by name, description, achievement_key
 - Rounds: search by prompt, details, season name
+
+Each round in the staff rounds response, and the round object returned by the
+staff round create/edit endpoints, includes the editable read fields below in
+addition to the existing fields:
+
+```json
+{
+  "goes_live_at": "2026-08-18T09:00:00-04:00",
+  "submission_opens": "2026-08-18T10:00:00-04:00",
+  "submission_deadline": "2026-08-20T10:00:00-04:00",
+  "voting_deadline": "2026-08-22T10:00:00-04:00",
+  "reveal_at": "2026-08-22T10:05:00-04:00",
+  "host": {
+    "id": 7,
+    "username": "jerry",
+    "display_name": "Jerry",
+    "picture_url": "/media/profile_pictures/2026/08/avatar.jpg"
+  }
+}
+```
+
+All schedule fields are returned as timezone-aware ISO 8601 timestamps. The
+`goes_live_at` field is nullable; the other schedule fields are required by the
+Round model and are non-null. `host` is `null` when no host is assigned, and
+`host.picture_url` is nullable when the host has no profile picture.
 
 ---
 
@@ -434,6 +463,44 @@ All require `@api_staff_required`.
 | POST | `/api/v1/staff/badges/<badge_pk>/award/<user_pk>/` | Toggle badge award |
 | POST,PATCH | `/api/v1/staff/seasons/create/` | Create season |
 | POST,PATCH | `/api/v1/staff/seasons/<pk>/` | Edit season |
+
+### Staff countdown management
+
+These endpoints are staff-only and use the standard session authentication,
+CSRF, and `{ok, data}` envelope. Countdown request fields are `title`,
+`target_at`, and `active`. `target_at` accepts an ISO 8601 timestamp and is
+normalized with the same timezone behavior as the web `HomepageCountdownForm`.
+The response contains the authoritative countdown with `id`, `title`,
+`target_at`, `active`, `created_at`, and `updated_at`. The newest active
+countdown remains the one exposed to players, using the existing
+`updated_at`, then primary-key ordering. DELETE permanently removes the
+countdown, matching the web control action; it does not deactivate it.
+
+Validation failures return HTTP 400 with `error.code` `validation_failed` and
+field-level `error.errors` data. Missing records use the existing API 404
+behavior.
+
+### Staff notification blasts
+
+`GET /api/v1/staff/notifications/` returns recent blast history in
+`data.notifications`. Each item exposes the existing blast fields needed by
+League Control: `id`, `title`, `body`, `destination`, `audience`, `status`,
+`scheduled_for`, `created_at`, `sent_at`, and `delivery_count`.
+
+`POST /api/v1/staff/notifications/` accepts `title`, `body`, optional
+`destination` (default `/home/`), optional `audience` (currently `approved`),
+and optional `scheduled_for`. A future timezone-aware timestamp creates a
+`scheduled` blast for the existing scheduler. Omitting `scheduled_for`, or
+using `action: "send_now"`, creates and immediately sends a blast through the
+existing claim/delivery service. The send response contains
+`data.notification` and `data.delivery` totals. API clients must not send to
+push tokens directly. Delivery uses the stable event key
+`admin-blast:<blast_id>`, preserving per-device duplicate protection.
+
+Notification validation failures use HTTP 400 with `error.code`
+`validation_failed` and field-level `error.errors` data. All notification
+endpoints are staff-only; anonymous requests return 401 and authenticated
+non-staff requests return 403. POST, PATCH, and DELETE require CSRF.
 
 ---
 

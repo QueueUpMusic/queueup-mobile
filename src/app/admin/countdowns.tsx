@@ -1,0 +1,7 @@
+import { useState } from 'react';
+import { Alert, Pressable, Text } from 'react-native';
+import { useRouter } from 'expo-router';
+import { AdminReadList, styles } from '@/components/admin-read-list';
+import { deleteStaffCountdown, getStaffCountdowns } from '@/lib/api';
+import { StaffCountdown } from '@/types';
+export default function StaffCountdownsScreen(){const router=useRouter();const[reload,setReload]=useState(0);return <AdminReadList<StaffCountdown> reloadKey={reload} headerAction={<Pressable onPress={()=>router.push('/admin/countdowns/edit' as never)}><Text style={styles.action}>New countdown</Text></Pressable>} description="Create and manage pinned Home countdowns." empty="No countdowns yet." label="Countdowns" loadItems={async()=>(await getStaffCountdowns()).countdowns} placeholder="Search unavailable" renderItem={item=><><Text style={styles.name}>{item.title}</Text><Text style={styles.meta}>{new Date(item.target_at).toLocaleString()} · {item.active?'Active':'Inactive'}</Text><Text style={styles.action} onPress={()=>router.push(`/admin/countdowns/edit?id=${item.id}` as never)}>Edit</Text><Text style={styles.action} onPress={()=>Alert.alert('Delete countdown','Delete this countdown?',[{text:'Cancel'},{text:'Delete',style:'destructive',onPress:()=>void(async()=>{try{await deleteStaffCountdown(item.id);setReload(x=>x+1);}catch(e){Alert.alert('Unable to delete',e instanceof Error?e.message:'Please try again.');}})()}])}>Delete</Text></>} title="Countdowns"/>}

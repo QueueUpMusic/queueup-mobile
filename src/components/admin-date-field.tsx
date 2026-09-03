@@ -18,10 +18,10 @@ function displayDate(value: string): string {
   return parseDate(value).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 }
 
-export function AdminDateField({ label, value, onChangeText, optional = false }: { label: string; value: string; onChangeText: (value: string) => void; optional?: boolean }) {
+export function AdminDateField({ label, value, onChangeText, onOpen, optional = false }: { label: string; value: string; onChangeText: (value: string) => void; onOpen?: () => void; optional?: boolean }) {
   const [visible, setVisible] = useState(false);
   const [pickerValue, setPickerValue] = useState(() => parseDate(value));
-  const open = () => { setPickerValue(parseDate(value)); setVisible(true); };
+  const open = () => { setPickerValue(parseDate(value)); setVisible(true); onOpen?.(); };
   const onChange = (event: DateTimePickerEvent, date?: Date) => {
     if (Platform.OS === 'android') setVisible(false);
     if (event.type === 'dismissed' || !date) return;
@@ -37,8 +37,8 @@ const styles = StyleSheet.create({
   value: { color: colors.text, fontSize: 16 },
   placeholder: { color: colors.textMuted },
   pickerWrap: { alignItems: 'center', backgroundColor: colors.surfaceElevated, borderColor: colors.border, borderRadius: Radii.small, borderWidth: 1, marginTop: Spacing.sm, overflow: 'hidden', padding: Spacing.sm },
-  done: { alignSelf: 'stretch', borderTopColor: colors.border, borderTopWidth: StyleSheet.hairlineWidth, padding: Spacing.sm },
-  doneText: { color: colors.brandLight, fontWeight: '800', textAlign: 'right' },
+  done: { alignSelf: 'stretch', backgroundColor: colors.brand, borderRadius: 10, marginHorizontal: Spacing.sm, marginTop: Spacing.md, padding: Spacing.md },
+  doneText: { color: colors.background, fontSize: 15, fontWeight: '900', textAlign: 'center' },
   clear: { color: colors.brandLight, fontSize: 13, fontWeight: '700', marginTop: Spacing.xs },
   pressed: { opacity: 0.78 },
 });
