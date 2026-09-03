@@ -410,7 +410,15 @@ export class ApiError extends Error {
    * Create an ApiError from an HTTP status code.
    */
   static fromHttpStatus(statusCode: number, message?: string): ApiError {
-    const defaultMessage = `HTTP ${statusCode}`;
+    const defaultMessage = statusCode >= 500
+      ? 'Something went wrong. Please try again.'
+      : statusCode === 403
+        ? 'You do not have permission to do that.'
+        : statusCode === 404
+          ? 'We could not find what you were looking for.'
+          : statusCode === 429
+            ? 'Too many attempts. Please wait a moment and try again.'
+            : 'Please check your information and try again.';
     return new ApiError(
       message || defaultMessage,
       `HTTP_${statusCode}`,

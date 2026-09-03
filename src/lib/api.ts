@@ -366,7 +366,12 @@ export function removeProfilePicture(): Promise<ProfilePictureResponse> {
 }
 
 export function login(payload: LoginPayload): Promise<SessionResponse> {
-  return apiMutation<SessionResponse>('auth/login/', 'POST', payload);
+  return apiMutation<SessionResponse>('auth/login/', 'POST', payload).catch((cause) => {
+    if (cause instanceof ApiError && (cause.code === 'validation_failed' || cause.statusCode === 400)) {
+      throw ApiError.fromHttpStatus(400, 'That username or password is incorrect. Please try again.');
+    }
+    throw cause;
+  });
 }
 
 export function signup(payload: SignupPayload): Promise<SessionResponse> {

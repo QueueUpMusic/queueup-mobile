@@ -95,11 +95,13 @@ export default function EditProfileScreen() {
     setError(null);
     try {
       const currentDisplayName = profile?.player.display_name ?? user?.display_name ?? '';
+      // Picture and profile data are separate backend mutations. Complete the
+      // media operation first so a combined edit never races those requests.
+      if (photo) await uploadProfilePicture(photo);
+      else if (photoRemoved) await removeProfilePicture();
       if (displayName.trim() !== currentDisplayName || email.trim() !== (user?.email ?? '')) {
         await updateProfile({ display_name: displayName.trim(), email: email.trim() });
       }
-      if (photo) await uploadProfilePicture(photo);
-      else if (photoRemoved) await removeProfilePicture();
       await refreshSession();
       router.back();
     } catch (cause) {
