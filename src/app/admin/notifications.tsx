@@ -1,8 +1,107 @@
-import { useState } from 'react';
-import { Alert, Pressable, Text, TextInput, View } from 'react-native';
-import { useRouter } from 'expo-router';
-import { AdminReadList, styles } from '@/components/admin-read-list';
-import { createStaffNotification, getStaffNotifications } from '@/lib/api';
-import { StaffNotification } from '@/types';
-export default function StaffNotificationsScreen(){const router=useRouter();return <AdminReadList<StaffNotification> headerAction={<Pressable onPress={()=>router.push('/admin/notifications/new' as never)}><Text style={styles.action}>New notification</Text></Pressable>} description="Send now or schedule server-side notifications." empty="No notifications yet." label="Notifications" loadItems={async()=>(await getStaffNotifications()).notifications} placeholder="Search unavailable" renderItem={item=><><Text style={styles.name}>{item.title}</Text><Text style={styles.meta}>{item.status} · {item.delivery_count} delivered{item.scheduled_for?` · scheduled ${new Date(item.scheduled_for).toLocaleString()}`:''}</Text><Text style={styles.meta}>{item.body}</Text></>} title="Notifications"/>}
-export function NotificationEditor(){const router=useRouter();const[title,setTitle]=useState('');const[body,setBody]=useState('');const[saving,setSaving]=useState(false);const send=async(action:string)=>{setSaving(true);try{await createStaffNotification({title,body,destination:'/home/',audience:'approved',...(action==='send_now'?{action}:{})});Alert.alert(action==='send_now'?'Sent':'Scheduled','Notification saved.');router.back();}catch(e){Alert.alert('Unable to send notification',e instanceof Error?e.message:'Please try again.');}finally{setSaving(false);}};return <View style={[styles.screen,{padding:24,gap:14}]}><Text style={styles.title}>New notification</Text><TextInput value={title} onChangeText={setTitle} placeholder="Title" placeholderTextColor="#9aa7a1" style={[styles.search,{color:'#fff'}]}/><TextInput value={body} onChangeText={setBody} placeholder="Message" placeholderTextColor="#9aa7a1" multiline style={[styles.search,{color:'#fff',minHeight:110}]}/><Pressable disabled={saving||!title||!body} onPress={()=>Alert.alert('Send now?','This will notify approved players.',[{text:'Cancel'},{text:'Send now',onPress:()=>void send('send_now')}])}><Text style={styles.action}>{saving?'Sending…':'Send now'}</Text></Pressable><Pressable disabled={saving||!title||!body} onPress={()=>void send('schedule')}><Text style={styles.action}>Save notification</Text></Pressable></View>}
+import { useState } from "react";
+import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput } from "react-native";
+import { useRouter } from "expo-router";
+import { AdminReadList, styles } from "@/components/admin-read-list";
+import { createStaffNotification, getStaffNotifications } from "@/lib/api";
+import { StaffNotification } from "@/types";
+export default function StaffNotificationsScreen() {
+  const router = useRouter();
+  return (
+    <AdminReadList<StaffNotification>
+      headerAction={
+        <Pressable
+          onPress={() => router.push("/admin/notifications/new" as never)}
+        >
+          <Text style={styles.action}>New notification</Text>
+        </Pressable>
+      }
+      description="Send now or schedule server-side notifications."
+      empty="No notifications yet."
+      label="Notifications"
+      loadItems={async () => (await getStaffNotifications()).notifications}
+      placeholder="Search unavailable"
+      renderItem={(item) => (
+        <>
+          <Text style={styles.name}>{item.title}</Text>
+          <Text style={styles.meta}>
+            {item.status} · {item.delivery_count} delivered
+            {item.scheduled_for
+              ? ` · scheduled ${new Date(item.scheduled_for).toLocaleString()}`
+              : ""}
+          </Text>
+          <Text style={styles.meta}>{item.body}</Text>
+        </>
+      )}
+      title="Notifications"
+    />
+  );
+}
+export function NotificationEditor() {
+  const router = useRouter();
+  const [title, setTitle] = useState("");
+  const [body, setBody] = useState("");
+  const [saving, setSaving] = useState(false);
+  const send = async (action: string) => {
+    setSaving(true);
+    try {
+      await createStaffNotification({
+        title,
+        body,
+        destination: "/home/",
+        audience: "approved",
+        ...(action === "send_now" ? { action } : {}),
+      });
+      Alert.alert(
+        action === "send_now" ? "Sent" : "Scheduled",
+        "Notification saved.",
+      );
+      router.back();
+    } catch (e) {
+      Alert.alert(
+        "Unable to send notification",
+        e instanceof Error ? e.message : "Please try again.",
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+  return (
+    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.screen}>
+      <ScrollView contentContainerStyle={{ gap: 14, padding: 24 }} keyboardShouldPersistTaps="handled">
+      <Text style={styles.title}>New notification</Text>
+      <TextInput
+        value={title}
+        onChangeText={setTitle}
+        placeholder="Title"
+        placeholderTextColor="#9aa7a1"
+        style={[styles.search, { color: "#fff" }]}
+      />
+      <TextInput
+        value={body}
+        onChangeText={setBody}
+        placeholder="Message"
+        placeholderTextColor="#9aa7a1"
+        multiline
+        style={[styles.search, { color: "#fff", minHeight: 110 }]}
+      />
+      <Pressable
+        disabled={saving || !title || !body}
+        onPress={() =>
+          Alert.alert("Send now?", "This will notify approved players.", [
+            { text: "Cancel" },
+            { text: "Send now", onPress: () => void send("send_now") },
+          ])
+        }
+      >
+        <Text style={styles.action}>{saving ? "Sending…" : "Send now"}</Text>
+      </Pressable>
+      <Pressable
+        disabled={saving || !title || !body}
+        onPress={() => void send("schedule")}
+      >
+        <Text style={styles.action}>Save notification</Text>
+      </Pressable>
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
+}

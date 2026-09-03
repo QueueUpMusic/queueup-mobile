@@ -1,11 +1,241 @@
-import { useCallback, useState, type ReactNode } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { useFocusEffect, useRouter } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Action, ErrorMessage } from '@/components/auth-ui';
-import { ChevronLeft, SearchIcon } from '@/components/queueup-icon';
-import { colors, Radii, Spacing } from '@/constants/theme';
-import { ApiError } from '@/types';
-export function AdminReadList<T>({ title, description, label, placeholder, loadItems, renderItem, empty, headerAction, reloadKey }: { title: string; description: string; label: string; placeholder: string; loadItems: (query: string) => Promise<T[]>; renderItem: (item: T) => ReactNode; empty: string; headerAction?: ReactNode; reloadKey?: number }) { const [items, setItems] = useState<T[] | null>(null); const [query, setQuery] = useState(''); const [error, setError] = useState<ApiError | null>(null); const [refreshing, setRefreshing] = useState(false); const load = useCallback(async (pull = false, nextQuery = query) => { if (pull) setRefreshing(true); try { setItems(await loadItems(nextQuery)); setError(null); } catch (cause) { setError(cause instanceof ApiError ? cause : ApiError.networkError(`Unable to load ${title.toLowerCase()}.`)); } finally { setRefreshing(false); } }, [loadItems, query, title]); useFocusEffect(useCallback(() => { void load(false, ''); }, [load])); if (!items && !error) return <Page title={label}><ActivityIndicator color={colors.brand} /></Page>; if (!items && error) return <Page title={label}><View style={styles.center}><Text style={styles.errorTitle}>{label} are taking a moment</Text><ErrorMessage message={error.message} /><Action onPress={() => void load()}>Try again</Action></View></Page>; const visibleItems = items ?? []; return <Page title={label}><ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl colors={[colors.brand]} onRefresh={() => void load(true)} refreshing={refreshing} />}><View style={styles.heading}><View style={{ flex: 1 }}><Text style={styles.kicker}>Staff · {label}</Text><Text style={styles.title}>{title}</Text></View>{headerAction}</View><Text style={styles.subtitle}>{description}</Text><View style={styles.search}><SearchIcon color={colors.textMuted} size={19} /><TextInput accessibilityLabel={`Search ${label.toLowerCase()}`} onChangeText={setQuery} onSubmitEditing={() => void load(false)} placeholder={placeholder} placeholderTextColor={colors.textMuted} returnKeyType="search" style={styles.input} value={query} /></View>{visibleItems.map((item, index) => <View key={index} style={styles.card}>{renderItem(item)}</View>)}{!visibleItems.length ? <Text style={styles.empty}>{empty}</Text> : null}</ScrollView></Page>; }
-function Page({ title, children }: { title: string; children: ReactNode }) { const router = useRouter(); const insets = useSafeAreaInsets(); return <View style={styles.screen}><View style={[styles.header, { paddingTop: insets.top + Spacing.sm }]}><Pressable accessibilityLabel="Go back" accessibilityRole="button" hitSlop={8} onPress={() => router.back()} style={styles.backButton}><ChevronLeft color={colors.text} /></Pressable><Text style={styles.headerTitle}>{title} management</Text><View style={styles.spacer} /></View>{children}</View>; }
-export const styles = StyleSheet.create({ screen: { backgroundColor: colors.background, flex: 1 }, header: { alignItems: 'center', borderBottomColor: colors.borderSoft, borderBottomWidth: StyleSheet.hairlineWidth, flexDirection: 'row', paddingBottom: Spacing.md, paddingHorizontal: Spacing.xl }, backButton: { alignItems: 'center', height: 44, justifyContent: 'center', width: 44 }, headerTitle: { color: colors.text, flex: 1, fontSize: 17, fontWeight: '800', textAlign: 'center' }, spacer: { width: 44 }, content: { alignSelf: 'center', gap: Spacing.md, maxWidth: 800, padding: Spacing.xl, paddingBottom: Spacing.xxxl, width: '100%' }, center: { flex: 1, justifyContent: 'center', padding: Spacing.xl }, heading: { alignItems: 'center', flexDirection: 'row', gap: Spacing.md }, kicker: { color: colors.brandLight, fontSize: 12, fontWeight: '900', textTransform: 'uppercase' }, title: { color: colors.text, fontSize: 30, fontWeight: '900' }, subtitle: { color: colors.textMuted, fontSize: 15, lineHeight: 22 }, search: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderRadius: 12, borderWidth: 1, flexDirection: 'row', gap: Spacing.sm, minHeight: 52, paddingHorizontal: Spacing.md }, input: { color: colors.text, flex: 1, fontSize: 15 }, card: { backgroundColor: colors.surface, borderColor: colors.borderSoft, borderRadius: Radii.small, borderWidth: 1, gap: Spacing.sm, padding: Spacing.md }, name: { color: colors.text, fontSize: 17, fontWeight: '800' }, meta: { color: colors.textMuted, fontSize: 12, lineHeight: 18 }, row: { alignItems: 'center', flexDirection: 'row', gap: Spacing.sm }, state: { color: colors.brandLight, fontSize: 11, fontWeight: '900' }, actions: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm }, action: { backgroundColor: colors.surfaceElevated, borderColor: colors.border, borderRadius: 10, borderWidth: 1, color: colors.brandLight, fontSize: 12, fontWeight: '800', paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm }, actionButton: { alignItems: 'center', backgroundColor: colors.surfaceElevated, borderColor: colors.border, borderRadius: 10, borderWidth: 1, justifyContent: 'center', minHeight: 42, paddingHorizontal: Spacing.md }, empty: { color: colors.textMuted }, errorTitle: { color: colors.text, fontSize: 24, fontWeight: '800' } });
+import { useCallback, useState, type ReactNode } from "react";
+import {
+  ActivityIndicator,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Action, ErrorMessage } from "@/components/auth-ui";
+import { ChevronLeft, SearchIcon } from "@/components/queueup-icon";
+import { colors, Radii, Spacing } from "@/constants/theme";
+import { ApiError } from "@/types";
+export function AdminReadList<T>({
+  title,
+  description,
+  label,
+  placeholder,
+  loadItems,
+  renderItem,
+  empty,
+  headerAction,
+  reloadKey,
+}: {
+  title: string;
+  description: string;
+  label: string;
+  placeholder: string;
+  loadItems: (query: string) => Promise<T[]>;
+  renderItem: (item: T) => ReactNode;
+  empty: string;
+  headerAction?: ReactNode;
+  reloadKey?: number;
+}) {
+  const [items, setItems] = useState<T[] | null>(null);
+  const [query, setQuery] = useState("");
+  const [error, setError] = useState<ApiError | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const load = useCallback(
+    async (pull = false, nextQuery = query) => {
+      if (pull) setRefreshing(true);
+      try {
+        setItems(await loadItems(nextQuery));
+        setError(null);
+      } catch (cause) {
+        setError(
+          cause instanceof ApiError
+            ? cause
+            : ApiError.networkError(`Unable to load ${title.toLowerCase()}.`),
+        );
+      } finally {
+        setRefreshing(false);
+      }
+    },
+    [loadItems, query, title],
+  );
+  useFocusEffect(
+    useCallback(() => {
+      void load(false, "");
+    }, [load]),
+  );
+  if (!items && !error)
+    return (
+      <Page title={label}>
+        <ActivityIndicator color={colors.brand} />
+      </Page>
+    );
+  if (!items && error)
+    return (
+      <Page title={label}>
+        <View style={styles.center}>
+          <Text style={styles.errorTitle}>{label} are taking a moment</Text>
+          <ErrorMessage message={error.message} />
+          <Action onPress={() => void load()}>Try again</Action>
+        </View>
+      </Page>
+    );
+  const visibleItems = items ?? [];
+  return (
+    <Page title={label}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        refreshControl={
+          <RefreshControl
+            colors={[colors.brand]}
+            onRefresh={() => void load(true)}
+            refreshing={refreshing}
+          />
+        }
+      >
+        <View style={styles.heading}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.kicker}>Staff · {label}</Text>
+            <Text style={styles.title}>{title}</Text>
+          </View>
+          {headerAction}
+        </View>
+        <Text style={styles.subtitle}>{description}</Text>
+        <View style={styles.search}>
+          <SearchIcon color={colors.textMuted} size={19} />
+          <TextInput
+            accessibilityLabel={`Search ${label.toLowerCase()}`}
+            onChangeText={setQuery}
+            onSubmitEditing={() => void load(false)}
+            placeholder={placeholder}
+            placeholderTextColor={colors.textMuted}
+            returnKeyType="search"
+            style={styles.input}
+            value={query}
+          />
+        </View>
+        {visibleItems.map((item, index) => (
+          <View key={index} style={styles.card}>
+            {renderItem(item)}
+          </View>
+        ))}
+        {!visibleItems.length ? (
+          <Text style={styles.empty}>{empty}</Text>
+        ) : null}
+      </ScrollView>
+    </Page>
+  );
+}
+function Page({ title, children }: { title: string; children: ReactNode }) {
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  return (
+    <View style={styles.screen}>
+      <View style={[styles.header, { paddingTop: insets.top + Spacing.sm }]}>
+        <Pressable
+          accessibilityLabel="Go back"
+          accessibilityRole="button"
+          hitSlop={8}
+          onPress={() => router.back()}
+          style={styles.backButton}
+        >
+          <ChevronLeft color={colors.text} />
+        </Pressable>
+        <Text style={styles.headerTitle}>{title} management</Text>
+        <View style={styles.spacer} />
+      </View>
+      {children}
+    </View>
+  );
+}
+export const styles = StyleSheet.create({
+  screen: { backgroundColor: colors.background, flex: 1 },
+  header: {
+    alignItems: "center",
+    borderBottomColor: colors.borderSoft,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    flexDirection: "row",
+    paddingBottom: Spacing.md,
+    paddingHorizontal: Spacing.xl,
+  },
+  backButton: {
+    alignItems: "center",
+    height: 44,
+    justifyContent: "center",
+    width: 44,
+  },
+  headerTitle: {
+    color: colors.text,
+    flex: 1,
+    fontSize: 17,
+    fontWeight: "800",
+    textAlign: "center",
+  },
+  spacer: { width: 44 },
+  content: {
+    alignSelf: "center",
+    gap: Spacing.md,
+    maxWidth: 800,
+    padding: Spacing.xl,
+    paddingBottom: Spacing.xxxl,
+    width: "100%",
+  },
+  center: { flex: 1, justifyContent: "center", padding: Spacing.xl },
+  heading: { alignItems: "center", flexDirection: "row", gap: Spacing.md },
+  kicker: {
+    color: colors.brandLight,
+    fontSize: 12,
+    fontWeight: "900",
+    textTransform: "uppercase",
+  },
+  title: { color: colors.text, fontSize: 30, fontWeight: "900" },
+  subtitle: { color: colors.textMuted, fontSize: 15, lineHeight: 22 },
+  search: {
+    alignItems: "center",
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: 12,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: Spacing.sm,
+    minHeight: 52,
+    paddingHorizontal: Spacing.md,
+  },
+  input: { color: colors.text, flex: 1, fontSize: 15 },
+  card: {
+    backgroundColor: colors.surface,
+    borderColor: colors.borderSoft,
+    borderRadius: Radii.small,
+    borderWidth: 1,
+    gap: Spacing.sm,
+    padding: Spacing.md,
+  },
+  name: { color: colors.text, fontSize: 17, fontWeight: "800" },
+  meta: { color: colors.textMuted, fontSize: 12, lineHeight: 18 },
+  row: { alignItems: "center", flexDirection: "row", gap: Spacing.sm },
+  state: { color: colors.brandLight, fontSize: 11, fontWeight: "900" },
+  actions: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.sm },
+  action: {
+    backgroundColor: colors.surfaceElevated,
+    borderColor: colors.border,
+    borderRadius: 10,
+    borderWidth: 1,
+    color: colors.brandLight,
+    fontSize: 12,
+    fontWeight: "800",
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+  },
+  actionButton: {
+    alignItems: "center",
+    backgroundColor: colors.surfaceElevated,
+    borderColor: colors.border,
+    borderRadius: 10,
+    borderWidth: 1,
+    justifyContent: "center",
+    minHeight: 42,
+    paddingHorizontal: Spacing.md,
+  },
+  empty: { color: colors.textMuted },
+  errorTitle: { color: colors.text, fontSize: 24, fontWeight: "800" },
+});

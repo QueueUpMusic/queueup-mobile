@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
-import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import DateTimePicker, { DateTimePickerChangeEvent } from '@react-native-community/datetimepicker';
 import { colors, Radii, Spacing } from '@/constants/theme';
 
 function parseDate(value: string): Date {
@@ -21,13 +21,18 @@ function displayDate(value: string): string {
 export function AdminDateField({ label, value, onChangeText, onOpen, optional = false }: { label: string; value: string; onChangeText: (value: string) => void; onOpen?: () => void; optional?: boolean }) {
   const [visible, setVisible] = useState(false);
   const [pickerValue, setPickerValue] = useState(() => parseDate(value));
-  const open = () => { setPickerValue(parseDate(value)); setVisible(true); onOpen?.(); };
-  const onChange = (event: DateTimePickerEvent, date?: Date) => {
-    if (Platform.OS === 'android') setVisible(false);
-    if (event.type === 'dismissed' || !date) return;
+  const [androidStage, setAndroidStage] = useState<'date' | 'time'>('date');
+  const open = () => { setPickerValue(parseDate(value)); setAndroidStage('date'); setVisible(true); onOpen?.(); };
+  const onValueChange = (_event: DateTimePickerChangeEvent, date: Date) => {
+    if (Platform.OS === 'android' && androidStage === 'date') {
+      setPickerValue(date);
+      setAndroidStage('time');
+      return;
+    }
     setPickerValue(date); onChangeText(localIso(date));
+    if (Platform.OS === 'android') setVisible(false);
   };
-  return <View style={styles.field}><Text style={styles.label}>{label}{optional ? ' · optional' : ''}</Text><Pressable accessibilityLabel={label} accessibilityRole="button" onPress={open} style={({ pressed }) => [styles.input, pressed && styles.pressed]}><Text style={[styles.value, !value && styles.placeholder]}>{displayDate(value)}</Text></Pressable>{visible ? <View style={styles.pickerWrap}><DateTimePicker display={Platform.OS === 'ios' ? 'inline' : 'default'} mode="datetime" onChange={onChange} value={pickerValue} /><>{Platform.OS === 'ios' ? <Pressable accessibilityRole="button" onPress={() => setVisible(false)} style={styles.done}><Text style={styles.doneText}>Done</Text></Pressable> : null}</></View> : null}{optional && value ? <Pressable accessibilityRole="button" onPress={() => { setVisible(false); onChangeText(''); }}><Text style={styles.clear}>Clear date</Text></Pressable> : null}</View>;
+  return <View style={styles.field}><Text style={styles.label}>{label}{optional ? ' · optional' : ''}</Text><Pressable accessibilityLabel={label} accessibilityRole="button" onPress={open} style={({ pressed }) => [styles.input, pressed && styles.pressed]}><Text style={[styles.value, !value && styles.placeholder]}>{displayDate(value)}</Text></Pressable>{visible ? <View style={styles.pickerWrap}><DateTimePicker display={Platform.OS === 'ios' ? 'inline' : 'default'} mode={Platform.OS === 'ios' ? 'datetime' : androidStage} onDismiss={() => setVisible(false)} onValueChange={onValueChange} value={pickerValue} /><>{Platform.OS === 'ios' ? <Pressable accessibilityRole="button" onPress={() => setVisible(false)} style={styles.done}><Text style={styles.doneText}>Done</Text></Pressable> : null}</></View> : null}{optional && value ? <Pressable accessibilityRole="button" onPress={() => { setVisible(false); onChangeText(''); }}><Text style={styles.clear}>Clear date</Text></Pressable> : null}</View>;
 }
 
 const styles = StyleSheet.create({
