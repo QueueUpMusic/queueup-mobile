@@ -13,7 +13,7 @@
     },
     "android": {
       "package": "com.queueupmusic.queueup",
-      "googleServicesFile": "./google-services.json"
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#07100c",
         "foregroundImage": "./assets/images/queueup-icon.png",
