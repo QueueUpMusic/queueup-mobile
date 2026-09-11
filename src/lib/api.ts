@@ -374,6 +374,32 @@ export function login(payload: LoginPayload): Promise<SessionResponse> {
   });
 }
 
+/**
+ * Submit the existing website password-reset form. The reset link itself
+ * intentionally remains a website link, where the rest of the flow lives.
+ */
+export async function requestPasswordReset(email: string): Promise<void> {
+  const token = await ensureCsrfToken();
+  try {
+    const response = await fetch(`${getCurrentServer()}/password-reset/`, {
+      ...defaultFetchOptions,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-CSRFToken': token,
+        ...(Platform.OS === 'web' ? {} : { Origin: getCurrentServer() }),
+      },
+      body: `email=${encodeURIComponent(email.trim())}`,
+    });
+    if (!response.ok || !response.url.endsWith('/password-reset/sent/')) {
+      throw ApiError.fromHttpStatus(response.status || 400, 'Please enter a valid email address and try again.');
+    }
+  } catch (error) {
+    if (error instanceof ApiError) throw error;
+    throw ApiError.networkError('We couldn’t send the reset email. Check your connection and try again.', error instanceof Error ? error : undefined);
+  }
+}
+
 export function signup(payload: SignupPayload): Promise<SessionResponse> {
   return apiMutation<SessionResponse>('auth/signup/', 'POST', payload);
 }

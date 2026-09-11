@@ -15,6 +15,7 @@ import { ChevronLeft } from "@/components/queueup-icon";
 import { colors, Radii, Spacing } from "@/constants/theme";
 import { getStaffRoundStatus } from "@/lib/api";
 import { ApiError, StaffRoundStatus } from "@/types";
+import { ProfileLink } from "@/components/profile-link";
 export default function RoundStatsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -99,7 +100,7 @@ export default function RoundStatsScreen() {
           </View>
           {data.players.map((player) => (
             <View key={player.id} style={styles.card}>
-              <Text style={styles.name}>{player.display_name}</Text>
+              <ProfileLink displayName={player.display_name} style={styles.name} username={player.username} />
               <Text style={styles.meta}>
                 @{player.username}
                 {player.submitted ? " · Submitted" : " · Not submitted"} ·{" "}

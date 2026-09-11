@@ -9,6 +9,7 @@ import { resolveServerUrl } from '@/config/server';
 import { useAuth } from '@/context/auth';
 import { getLeaderboard } from '@/lib/api';
 import { useLiveRefresh } from '@/hooks/use-live-refresh';
+import { ProfileLink } from '@/components/profile-link';
 import { ApiError, LeaderboardEntry, LeaderboardResponse, SeasonSummary, UserSummary } from '@/types';
 
 function formatSeasonDate(value: string | null): string {
@@ -37,7 +38,7 @@ function LeaderboardRow({ entry, currentUserId }: { entry: LeaderboardEntry; cur
     <Text style={[styles.rankPlace, entry.place <= 3 && styles.topRankPlace]}>{place}</Text>
     <Avatar player={entry.player} />
     <View style={styles.playerCopy}>
-      <Text numberOfLines={1} style={styles.playerName}>{entry.player.display_name}</Text>
+      <ProfileLink displayName={entry.player.display_name} style={styles.playerName} username={entry.player.username} />
       <Text numberOfLines={1} style={styles.playerMeta}>{metadata}</Text>
     </View>
     <Text numberOfLines={1} style={styles.points}>{entry.total_score.toLocaleString()} pts</Text>

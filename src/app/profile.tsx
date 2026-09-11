@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Action, ErrorMessage } from '@/components/auth-ui';
 import { PlayerAvatar } from '@/components/player-avatar';
 import { PlayerHeader } from '@/components/player-header';
@@ -42,9 +42,12 @@ function ProfileHeader({ onBack }: { onBack: () => void }) {
   return <PlayerHeader leftAction={<Pressable accessibilityLabel="Go back" accessibilityRole="button" hitSlop={8} onPress={onBack} style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}><ChevronLeft color={colors.brand} size={24} /></Pressable>} showAvatar={false} />;
 }
 
-export default function ProfileScreen() {
+export function ProfileScreen() {
   const router = useRouter();
   const { user, refresh: refreshSession } = useAuth();
+  const { username: routeUsername } = useLocalSearchParams<{ username?: string }>();
+  const profileUsername = routeUsername ?? user?.username;
+  const isOwnProfile = Boolean(user && profileUsername && user.username.toLowerCase() === profileUsername.toLowerCase());
   const [profile, setProfile] = useState<ProfileResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -52,13 +55,13 @@ export default function ProfileScreen() {
   const requestInFlight = useRef(false);
 
   const load = useCallback(async (pull = false, background = false) => {
-    if (!user) return;
+    if (!user || !profileUsername) return;
     if (requestInFlight.current) return;
     requestInFlight.current = true;
     if (pull) setRefreshing(true); else if (!background) setLoading(true);
     setError(null);
     try {
-      setProfile(await getProfile(user.username));
+      setProfile(await getProfile(profileUsername));
     } catch (cause) {
       const apiError = cause instanceof ApiError ? cause : ApiError.networkError('Unable to load your profile.');
       if (apiError.statusCode === 401) {
@@ -70,7 +73,7 @@ export default function ProfileScreen() {
       setRefreshing(false);
       requestInFlight.current = false;
     }
-  }, [refreshSession, user]);
+  }, [profileUsername, refreshSession, user]);
 
   useFocusEffect(useCallback(() => { void load(); }, [load]));
   useLiveRefresh(() => load(false, true), null);
@@ -92,14 +95,14 @@ export default function ProfileScreen() {
         <Text style={styles.username}>@{player.username}</Text>
       </View>
 
-      <View style={styles.profileMenu}>
+      {isOwnProfile ? <View style={styles.profileMenu}>
         <Pressable accessibilityHint="Edit your display name or profile picture" accessibilityRole="button" onPress={() => router.push('/profile/edit')} style={({ pressed }) => [styles.settingsRow, pressed && styles.pressed]}>
           <View><Text style={styles.settingsTitle}>Edit profile</Text><Text style={styles.settingsCopy}>Name and profile picture</Text></View><ArrowRight color={colors.brandLight} size={20} />
         </Pressable>
         <Pressable accessibilityHint="Opens account and app settings" accessibilityRole="button" onPress={() => router.push('/settings')} style={({ pressed }) => [styles.settingsRow, pressed && styles.pressed]}>
           <View><Text style={styles.settingsTitle}>Settings</Text><Text style={styles.settingsCopy}>Account and app preferences</Text></View><ArrowRight color={colors.brandLight} size={20} />
         </Pressable>
-      </View>
+      </View> : null}
 
       <View style={styles.metricGrid}>
         <ProfileMetric label="Wins" value={metrics.wins} />
@@ -117,6 +120,10 @@ export default function ProfileScreen() {
       <View style={styles.analyticsGrid}><AnalyticsList title="Favorite genres" values={profile.favorite_genres} /><AnalyticsList title="Most submitted artists" values={profile.most_submitted_artists} /></View>
     </ScrollView>
   </View>;
+}
+
+export default function OwnProfileScreen() {
+  return <ProfileScreen />;
 }
 
 const styles = StyleSheet.create({

@@ -25,6 +25,7 @@ function AuthStack() {
     <Stack.Screen name="index" />
     <Stack.Protected guard={status === 'logged_out'}>
       <Stack.Screen name="login" />
+      <Stack.Screen name="password-reset" />
       <Stack.Screen name="signup" />
     </Stack.Protected>
     <Stack.Protected guard={status === 'pending'}>
@@ -53,6 +54,7 @@ function AuthStack() {
         <Stack.Screen name="admin/seasons/new" options={{ animation: 'slide_from_right' }} />
       </Stack.Protected>
       <Stack.Screen name="profile" options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen name="profile/[username]" options={{ animation: 'slide_from_right' }} />
       <Stack.Screen name="profile/edit" options={{ animation: 'slide_from_right' }} />
       <Stack.Screen name="settings" />
     </Stack.Protected>

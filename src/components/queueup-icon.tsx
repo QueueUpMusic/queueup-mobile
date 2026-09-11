@@ -1,6 +1,6 @@
 import { SymbolView } from 'expo-symbols';
 import type { ColorValue } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Circle, Path } from 'react-native-svg';
 import { colors } from '@/constants/theme';
 
 type QueueUpIconName = 'home' | 'archive' | 'rankings' | 'profile' | 'admin';
@@ -26,6 +26,15 @@ export function QueueUpIcon({ name, color, size = 22 }: { name: QueueUpIconName;
     </Svg>;
   }
   return <SymbolView accessibilityLabel={`${name} tab`} name={symbols[name]} size={size} tintColor={color} weight="semibold" />;
+}
+
+/** Transparent, scalable QueueUp music mark for surfaces where the raster logo background is undesirable. */
+export function QueueUpMark({ color = colors.brand, size = 96 }: { color?: ColorValue; size?: number }) {
+  return <Svg accessibilityLabel="QueueUp logo" fill="none" height={size} viewBox="0 0 100 100" width={size}>
+    <Path d="M38 27c0-4 2.7-7.1 6.7-7.7l36.5-7.1c3.9-.8 7.3 2.2 7.3 6.3v40.8h-7.7V22.9l-35.8 6.9v37.4h-7.7V27Z" fill={color} />
+    <Circle cx="30" cy="70" fill={color} r="16" />
+    <Circle cx="68" cy="60" fill={color} r="16" />
+  </Svg>;
 }
 
 export function ChevronDown({ color, size = 20 }: { color: ColorValue; size?: number }) {

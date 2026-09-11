@@ -18,6 +18,7 @@ import {
   saveStaffBadge,
 } from "@/lib/api";
 import { colors } from "@/constants/theme";
+import { ProfileLink } from "@/components/profile-link";
 import { StaffBadge, StaffPlayer } from "@/types";
 const StyleSheet = { absoluteFillObject: NativeStyleSheet.absoluteFill };
 
@@ -124,9 +125,7 @@ export default function StaffBadgesScreen() {
                     paddingVertical: 14,
                   }}
                 >
-                  <Text style={styles.name}>
-                    {player.first_name || player.username}
-                  </Text>
+                  <ProfileLink displayName={player.first_name || player.username} style={styles.name} username={player.username} />
                   <Text style={styles.meta}>@{player.username}</Text>
                 </Pressable>
               ))}
