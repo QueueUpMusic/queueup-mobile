@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeft, LogOutIcon } from '@/components/queueup-icon';
 import { colors, Radii, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/auth';
+import { scheduleLocalTestNotification } from '@/lib/native-push';
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -20,6 +21,7 @@ export default function SettingsScreen() {
     <View style={styles.header}><Pressable accessibilityLabel="Go back" accessibilityRole="button" hitSlop={8} onPress={() => router.back()} style={({ pressed }) => [styles.back, pressed && styles.pressed]}><ChevronLeft color={colors.brand} size={24} /><Text style={styles.backLabel}>Profile</Text></Pressable><Text style={styles.headerTitle}>Settings</Text><View style={styles.headerSpacer} /></View>
     <View style={styles.content}><Text style={styles.title}>Settings</Text><Text style={styles.subtitle}>Account and app preferences will live here.</Text><View style={styles.divider} />
       <Pressable accessibilityRole="button" disabled={loggingOut} onPress={() => void handleLogout()} style={({ pressed }) => [styles.logoutButton, pressed && styles.pressed, loggingOut && styles.disabled]}><View style={styles.logoutContent}>{loggingOut ? <ActivityIndicator color={colors.text} /> : <LogOutIcon color={colors.text} size={21} />}<Text style={styles.logoutText}>{loggingOut ? 'Logging out…' : 'Log out'}</Text></View></Pressable>
+      {__DEV__ && <Pressable accessibilityRole="button" onPress={() => void scheduleLocalTestNotification().then(() => Alert.alert('Test notification scheduled', 'The local notification will appear shortly.')).catch(() => Alert.alert('Notification unavailable', 'Local notifications could not be scheduled on this device.'))} style={({ pressed }) => [styles.testButton, pressed && styles.pressed]}><Text style={styles.testButtonText}>Send local notification test</Text></Pressable>}
     </View>
   </SafeAreaView>;
 }
@@ -38,6 +40,8 @@ const styles = StyleSheet.create({
   logoutButton: { alignItems: 'center', backgroundColor: colors.surfaceElevated, borderColor: colors.border, borderRadius: Radii.small, borderWidth: 1, justifyContent: 'center', minHeight: 52, paddingHorizontal: Spacing.lg },
   logoutContent: { alignItems: 'center', flexDirection: 'row', gap: Spacing.sm },
   logoutText: { color: colors.text, fontSize: 16, fontWeight: '800' },
+  testButton: { alignItems: 'center', borderColor: colors.border, borderRadius: Radii.small, borderWidth: 1, justifyContent: 'center', minHeight: 48, paddingHorizontal: Spacing.lg },
+  testButtonText: { color: colors.textMuted, fontSize: 14, fontWeight: '700' },
   disabled: { opacity: 0.5 },
   pressed: { opacity: 0.76 },
 });

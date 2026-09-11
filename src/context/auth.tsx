@@ -1,6 +1,7 @@
 import { createContext, PropsWithChildren, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { clearCsrfToken, getCsrfToken, getOnboarding, getProfile, getSession, login as apiLogin, logout as apiLogout, signup as apiSignup } from '@/lib/api';
 import { ApiError, AuthStatus, SessionResponse, SessionUser } from '@/types';
+import { addNativePushTokenListener, registerNativePush, unregisterNativePush } from '@/lib/native-push';
 
 type AuthContextValue = {
   status: AuthStatus;
@@ -87,6 +88,13 @@ export function AuthProvider({ children }: PropsWithChildren) {
     return () => { active = false; };
   }, [status, user]);
 
+  useEffect(() => {
+    if (status !== 'approved') return;
+    void registerNativePush();
+    const tokenListener = addNativePushTokenListener();
+    return () => tokenListener?.remove();
+  }, [status]);
+
   const login = useCallback(async (username: string, password: string) => {
     await getCsrfToken();
     await apiLogin({ username, password });
@@ -108,6 +116,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
   const logout = useCallback(async () => {
     authGeneration.current += 1;
+    await unregisterNativePush();
     await getCsrfToken();
     await apiLogout();
     clearCsrfToken();

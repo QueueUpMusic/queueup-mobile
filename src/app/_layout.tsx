@@ -1,6 +1,8 @@
-import { DarkTheme, DefaultTheme, ThemeProvider, Stack } from 'expo-router';
+import { DarkTheme, DefaultTheme, ThemeProvider, Stack, useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useColorScheme } from 'react-native';
+import { Platform, useColorScheme } from 'react-native';
+import { useEffect, useRef } from 'react';
+import * as Notifications from 'expo-notifications';
 import { AuthProvider, useAuth } from '@/context/auth';
 import { StatusBar } from 'expo-status-bar';
 
@@ -21,7 +23,7 @@ export default function RootLayout() {
 function AuthStack() {
   const { status, user } = useAuth();
   const isStaff = Boolean(user?.is_staff || user?.is_superuser);
-  return <Stack screenOptions={{ headerShown: false }}>
+  return <><NotificationNavigation /><Stack screenOptions={{ headerShown: false }}>
     <Stack.Screen name="index" />
     <Stack.Protected guard={status === 'logged_out'}>
       <Stack.Screen name="login" />
@@ -58,5 +60,27 @@ function AuthStack() {
       <Stack.Screen name="profile/edit" options={{ animation: 'slide_from_right' }} />
       <Stack.Screen name="settings" />
     </Stack.Protected>
-  </Stack>;
+  </Stack></>;
+}
+
+function NotificationNavigation() {
+  const router = useRouter();
+  const { status } = useAuth();
+  const pendingRoute = useRef<string | null>(null);
+  const handledResponse = useRef<string | null>(null);
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+    const navigate = (response: Notifications.NotificationResponse | null) => {
+      if (!response || handledResponse.current === response.notification.request.identifier) return;
+      handledResponse.current = response.notification.request.identifier;
+      const route = response.notification.request.content.data?.route;
+      if (typeof route !== 'string' || !route.startsWith('/')) return;
+      if (status === 'approved') router.push(route as never); else pendingRoute.current = route;
+    };
+    const subscription = Notifications.addNotificationResponseReceivedListener(navigate);
+    void Notifications.getLastNotificationResponseAsync().then(navigate);
+    return () => subscription.remove();
+  }, [router, status]);
+  useEffect(() => { if (status === 'approved' && pendingRoute.current) { const route = pendingRoute.current; pendingRoute.current = null; router.push(route as never); } }, [router, status]);
+  return null;
 }

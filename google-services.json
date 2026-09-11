@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "58570063032",
+    "project_id": "queueup-fda12",
+    "storage_bucket": "queueup-fda12.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:58570063032:android:d2ee48f2c589376ca9c84d",
+        "android_client_info": {
+          "package_name": "com.queueupmusic.queueup"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDaRUIFpL4cejWc6lybPE-MsBJKbMHM65g"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
