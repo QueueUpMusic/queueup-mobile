@@ -45,6 +45,7 @@ export interface OnboardingResponse {
   voting_guide_seen: boolean;
   submission_rules_accepted: boolean;
   native_push_prompt_seen: boolean;
+  native_notifications_enabled: boolean;
 }
 
 export interface SeasonSummary {
@@ -185,6 +186,8 @@ export interface StaffOverviewResponse {
   user_count: number;
   signup_url: string;
   signup_qr: string;
+  native_device_count?: number;
+  legacy_web_subscription_count?: number;
 }
 
 export interface StaffSeason {
@@ -230,7 +233,7 @@ export interface StaffBadge { id: number; name: string; slug: string; descriptio
 export interface StaffBadgesResponse { query: string; badges: StaffBadge[]; }
 export interface StaffCountdown { id: number; title: string; target_at: string; active: boolean; created_at: string; updated_at: string; }
 export interface StaffCountdownsResponse { countdowns: StaffCountdown[]; }
-export interface StaffNotification { id: number; title: string; body: string; destination: string; audience: string; status: string; scheduled_for: string | null; created_at: string; sent_at: string | null; delivery_count: number; }
+export interface StaffNotification { id: number; title: string; body: string; destination: string; audience: string; status: string; scheduled_for: string | null; created_at: string; sent_at: string | null; delivery_count: number; native_delivery_count?: number; eligible_user_count?: number; native_device_count?: number; legacy_web_subscription_count?: number; }
 export interface StaffNotificationsResponse { notifications: StaffNotification[]; }
 export interface StaffRoundStatusPlayer { id: number; username: string; display_name: string; submitted: boolean; voted_count: number; eligible_count: number; voting_started: boolean; voting_complete: boolean; submission: { id: number; title: string; artist: string } | null; }
 export interface StaffRoundStatus { round_id: number; player_count: number; submitted_count: number; completed_count: number; players: StaffRoundStatusPlayer[]; }

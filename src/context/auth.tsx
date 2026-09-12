@@ -1,7 +1,7 @@
 import { createContext, PropsWithChildren, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { acknowledgeNativePushPrompt, clearCsrfToken, getCsrfToken, getOnboarding, getProfile, getSession, login as apiLogin, logout as apiLogout, signup as apiSignup } from '@/lib/api';
 import { ApiError, AuthStatus, OnboardingResponse, SessionResponse, SessionUser } from '@/types';
-import { addNativePushTokenListener, unregisterNativePush } from '@/lib/native-push';
+import { addNativePushTokenListener, refreshNativePushRegistration, unregisterNativePush } from '@/lib/native-push';
 
 type AuthContextValue = {
   status: AuthStatus;
@@ -98,7 +98,12 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
   useEffect(() => {
     if (status !== 'approved' || !user?.username) return;
-    void getOnboarding().then(setOnboarding).catch(() => {
+    void getOnboarding().then((state) => {
+      setOnboarding(state);
+      if (state.native_notifications_enabled) void refreshNativePushRegistration().catch(() => {
+        // Existing opt-in remains intact; Settings can retry registration.
+      });
+    }).catch(() => {
       // The notification invitation can wait for the next authenticated refresh.
     });
     const tokenListener = addNativePushTokenListener();

@@ -24,7 +24,7 @@ export default function StaffNotificationsScreen() {
         <>
           <Text style={styles.name}>{item.title}</Text>
           <Text style={styles.meta}>
-            {item.status} · {item.delivery_count} delivered
+            {item.status} · {item.delivery_count} web delivered · {item.native_delivery_count ?? 0} mobile delivered
             {item.scheduled_for
               ? ` · scheduled ${new Date(item.scheduled_for).toLocaleString()}`
               : ""}

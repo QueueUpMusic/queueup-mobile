@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeft, LogOutIcon } from '@/components/queueup-icon';
 import { colors, Radii, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/auth';
-import { enableNativePush, getNativePushStatus, NativePushStatus, scheduleLocalTestNotification, unregisterNativePush } from '@/lib/native-push';
+import { disableNativePush, enableNativePush, getNativePushStatus, NativePushStatus, scheduleLocalTestNotification } from '@/lib/native-push';
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -35,7 +35,7 @@ export default function SettingsScreen() {
   const disableNotifications = async () => {
     if (pushBusy) return;
     setPushBusy(true);
-    await unregisterNativePush();
+    await disableNativePush();
     await refreshPushStatus();
     setPushBusy(false);
   };
