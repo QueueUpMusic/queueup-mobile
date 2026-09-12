@@ -23,6 +23,16 @@ export default function RootLayout() {
 function AuthStack() {
   const { status, user } = useAuth();
   const isStaff = Boolean(user?.is_staff || user?.is_superuser);
+  const splashHidden = useRef(false);
+
+  useEffect(() => {
+    if (Platform.OS === 'web' || status === 'booting' || splashHidden.current) return;
+    splashHidden.current = true;
+    void SplashScreen.hideAsync().catch((error) => {
+      if (__DEV__) console.warn('QueueUp splash screen could not be hidden:', error);
+    });
+  }, [status]);
+
   return <><NotificationNavigation /><Stack screenOptions={{ headerShown: false }}>
     <Stack.Screen name="index" />
     <Stack.Protected guard={status === 'logged_out'}>
