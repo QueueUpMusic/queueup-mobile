@@ -5,6 +5,8 @@ import { useEffect, useRef } from 'react';
 import * as Notifications from 'expo-notifications';
 import { AuthProvider, useAuth } from '@/context/auth';
 import { StatusBar } from 'expo-status-bar';
+import { NativePushOptInModal } from '@/components/native-push-opt-in-modal';
+import { enableNativePush } from '@/lib/native-push';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -21,7 +23,7 @@ export default function RootLayout() {
 }
 
 function AuthStack() {
-  const { status, user } = useAuth();
+  const { status, user, onboarding, acknowledgeNativePushPrompt } = useAuth();
   const isStaff = Boolean(user?.is_staff || user?.is_superuser);
   const splashHidden = useRef(false);
 
@@ -33,6 +35,14 @@ function AuthStack() {
     });
   }, [status]);
 
+  const showNativePushPrompt = status === 'approved' && onboarding?.native_push_prompt_seen === false;
+  const handleEnableNotifications = async () => {
+    const result = await enableNativePush();
+    if (result.status === 'failed') return { message: result.message ?? 'We could not enable notifications right now.', keepOpen: true };
+    await acknowledgeNativePushPrompt();
+    return {};
+  };
+  const handleDismissNotifications = async () => { await acknowledgeNativePushPrompt(); };
   return <><NotificationNavigation /><Stack screenOptions={{ headerShown: false }}>
     <Stack.Screen name="index" />
     <Stack.Protected guard={status === 'logged_out'}>
@@ -70,7 +80,7 @@ function AuthStack() {
       <Stack.Screen name="profile/edit" options={{ animation: 'slide_from_right' }} />
       <Stack.Screen name="settings" />
     </Stack.Protected>
-  </Stack></>;
+  </Stack><NativePushOptInModal visible={showNativePushPrompt} onEnable={handleEnableNotifications} onDismiss={handleDismissNotifications} /></>;
 }
 
 function NotificationNavigation() {

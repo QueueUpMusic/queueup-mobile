@@ -1,12 +1,14 @@
 import { createContext, PropsWithChildren, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { clearCsrfToken, getCsrfToken, getOnboarding, getProfile, getSession, login as apiLogin, logout as apiLogout, signup as apiSignup } from '@/lib/api';
-import { ApiError, AuthStatus, SessionResponse, SessionUser } from '@/types';
-import { addNativePushTokenListener, registerNativePush, unregisterNativePush } from '@/lib/native-push';
+import { acknowledgeNativePushPrompt, clearCsrfToken, getCsrfToken, getOnboarding, getProfile, getSession, login as apiLogin, logout as apiLogout, signup as apiSignup } from '@/lib/api';
+import { ApiError, AuthStatus, OnboardingResponse, SessionResponse, SessionUser } from '@/types';
+import { addNativePushTokenListener, unregisterNativePush } from '@/lib/native-push';
 
 type AuthContextValue = {
   status: AuthStatus;
   user: SessionUser | null;
   profilePictureUrl: string | null;
+  onboarding: OnboardingResponse | null;
+  acknowledgeNativePushPrompt: () => Promise<void>;
   error: ApiError | null;
   refresh: (options?: { silent?: boolean }) => Promise<void>;
   login: (username: string, password: string) => Promise<void>;
@@ -24,6 +26,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const [status, setStatus] = useState<AuthStatus>('booting');
   const [user, setUser] = useState<SessionUser | null>(null);
   const [profilePictureUrl, setProfilePictureUrl] = useState<string | null>(null);
+  const [onboarding, setOnboarding] = useState<OnboardingResponse | null>(null);
   const [error, setError] = useState<ApiError | null>(null);
   const authGeneration = useRef(0);
   const pendingPollInFlight = useRef(false);
@@ -42,7 +45,6 @@ export function AuthProvider({ children }: PropsWithChildren) {
       const session = await getSession();
       if (generation !== authGeneration.current) return;
       applySession(session);
-      if (!isApproved(session)) await getOnboarding();
     } catch (cause) {
       if (generation !== authGeneration.current) return;
       const apiError = cause instanceof ApiError ? cause : ApiError.networkError('Unable to reach QueueUp');
@@ -78,22 +80,30 @@ export function AuthProvider({ children }: PropsWithChildren) {
   }, [refresh, status]);
 
   useEffect(() => {
-    if (status !== 'approved' || !user) return;
+    const username = user?.username;
+    if (status !== 'approved' || !username) return;
     let active = true;
-    void getProfile(user.username).then((profile) => {
+    void getProfile(username).then((profile) => {
       if (active) setProfilePictureUrl(profile.player.picture_url);
     }).catch(() => {
       // Profile data is optional for the shared header; keep the initials fallback.
     });
     return () => { active = false; };
-  }, [status, user]);
+  }, [status, user?.username]);
+
+  const acknowledgePrompt = useCallback(async () => {
+    await acknowledgeNativePushPrompt();
+    setOnboarding((current) => current ? { ...current, native_push_prompt_seen: true } : current);
+  }, []);
 
   useEffect(() => {
-    if (status !== 'approved') return;
-    void registerNativePush();
+    if (status !== 'approved' || !user?.username) return;
+    void getOnboarding().then(setOnboarding).catch(() => {
+      // The notification invitation can wait for the next authenticated refresh.
+    });
     const tokenListener = addNativePushTokenListener();
     return () => tokenListener?.remove();
-  }, [status]);
+  }, [status, user?.username]);
 
   const login = useCallback(async (username: string, password: string) => {
     await getCsrfToken();
@@ -122,10 +132,11 @@ export function AuthProvider({ children }: PropsWithChildren) {
     clearCsrfToken();
     setUser(null);
     setProfilePictureUrl(null);
+    setOnboarding(null);
     setStatus('logged_out');
   }, []);
 
-  const value = useMemo(() => ({ status, user, profilePictureUrl, error, refresh, login, signup, logout }), [status, user, profilePictureUrl, error, refresh, login, signup, logout]);
+  const value = useMemo(() => ({ status, user, profilePictureUrl, onboarding, acknowledgeNativePushPrompt: acknowledgePrompt, error, refresh, login, signup, logout }), [status, user, profilePictureUrl, onboarding, acknowledgePrompt, error, refresh, login, signup, logout]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

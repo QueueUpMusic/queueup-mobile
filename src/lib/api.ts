@@ -206,12 +206,20 @@ export async function getOnboarding(): Promise<OnboardingResponse> {
   return apiGet<OnboardingResponse>('onboarding/');
 }
 
+export function acknowledgeNativePushPrompt(): Promise<{ native_push_prompt_seen: boolean }> {
+  return apiMutation('onboarding/native-push-prompt/', 'POST');
+}
+
 export function registerNativePushDevice(payload: { expo_push_token: string; platform: 'ios' | 'android'; device_id?: string; app_version?: string }): Promise<{ device: { expo_push_token: string; platform: string; enabled: boolean } }> {
   return apiMutation('mobile/push/register/', 'POST', payload);
 }
 
 export function unregisterNativePushDevice(expo_push_token: string): Promise<{ removed: boolean }> {
   return apiMutation('mobile/push/unregister/', 'POST', { expo_push_token });
+}
+
+export function getNativePushDeviceStatus(expo_push_token: string): Promise<{ registered: boolean }> {
+  return apiMutation('mobile/push/status/', 'POST', { expo_push_token });
 }
 
 export async function getDashboard(): Promise<DashboardResponse> {

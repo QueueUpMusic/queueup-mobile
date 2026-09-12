@@ -44,6 +44,7 @@ export interface OnboardingResponse {
   season_welcome: { season_id: number; name: string; acknowledged: boolean } | null;
   voting_guide_seen: boolean;
   submission_rules_accepted: boolean;
+  native_push_prompt_seen: boolean;
 }
 
 export interface SeasonSummary {
