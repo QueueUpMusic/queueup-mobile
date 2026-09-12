@@ -44,7 +44,9 @@ function AuthStack() {
   };
   const handleDismissNotifications = async () => { await acknowledgeNativePushPrompt(); };
   return <><NotificationNavigation /><Stack screenOptions={{ headerShown: false }}>
-    <Stack.Screen name="index" />
+    <Stack.Protected guard={status !== 'approved' && status !== 'pending'}>
+      <Stack.Screen name="index" options={{ animation: 'none' }} />
+    </Stack.Protected>
     <Stack.Protected guard={status === 'logged_out'}>
       <Stack.Screen name="login" />
       <Stack.Screen name="password-reset" />
@@ -93,9 +95,9 @@ function NotificationNavigation() {
     const navigate = (response: Notifications.NotificationResponse | null) => {
       if (!response || handledResponse.current === response.notification.request.identifier) return;
       handledResponse.current = response.notification.request.identifier;
-      const route = response.notification.request.content.data?.route;
-      if (typeof route !== 'string' || !route.startsWith('/')) return;
-      if (status === 'approved') router.push(route as never); else pendingRoute.current = route;
+      const destination = getSafeNotificationRoute(response.notification.request.content.data?.route);
+      if (!destination) return;
+      if (status === 'approved') router.push(destination as never); else pendingRoute.current = destination;
     };
     const subscription = Notifications.addNotificationResponseReceivedListener(navigate);
     void Notifications.getLastNotificationResponseAsync().then(navigate);
@@ -103,4 +105,9 @@ function NotificationNavigation() {
   }, [router, status]);
   useEffect(() => { if (status === 'approved' && pendingRoute.current) { const route = pendingRoute.current; pendingRoute.current = null; router.push(route as never); } }, [router, status]);
   return null;
+}
+
+function getSafeNotificationRoute(value: unknown): string | null {
+  if (typeof value !== 'string' || !value.startsWith('/') || value.startsWith('//') || value.includes('://') || value.startsWith('/javascript:')) return null;
+  return value === '/' ? '/(app)' : value;
 }

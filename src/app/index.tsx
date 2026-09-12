@@ -1,5 +1,4 @@
-import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
-import { useEffect } from 'react';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ErrorMessage } from '@/components/auth-ui';
@@ -12,10 +11,8 @@ function WelcomeButton({ children, secondary = false, onPress }: { children: str
 }
 export default function QueueUpShellScreen() {
   const { status, error, refresh } = useAuth(); const router = useRouter();
-  useEffect(() => { if (status === 'pending') router.replace('/pending' as never); if (status === 'approved') router.replace('/(app)' as never); }, [router, status]);
-  if (status === 'booting') return <WelcomeBackground><ActivityIndicator color={colors.brand} /></WelcomeBackground>;
+  if (status === 'booting' || status === 'pending' || status === 'approved') return null;
   if (status === 'network_error') return <WelcomeBackground><View style={styles.centerMessage}><Text style={styles.title}>Can’t reach QueueUp</Text><Text style={styles.subtitle}>Your session may still be valid. Check your connection and try again.</Text><ErrorMessage message={error?.message} /><WelcomeButton onPress={() => void refresh()}>Try again</WelcomeButton></View></WelcomeBackground>;
-  if (status === 'pending' || status === 'approved') return <WelcomeBackground><ActivityIndicator color={colors.brand} /></WelcomeBackground>;
   return <WelcomeBackground><View style={styles.main}><View style={styles.brandBlock}><Image accessibilityLabel="QueueUp logo" resizeMode="contain" source={logo} style={styles.logo} /><Text style={styles.wordmark}>QueueUp</Text><Text style={styles.subtitle}>Your music league, together.</Text></View><View style={styles.actions}><WelcomeButton onPress={() => router.push('/login' as never)}>Log in</WelcomeButton><WelcomeButton onPress={() => router.push('/signup' as never)} secondary>Sign up</WelcomeButton></View></View></WelcomeBackground>;
 }
 function WelcomeBackground({ children }: { children: React.ReactNode }) {
