@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Animated,
   Modal,
   Pressable,
   ScrollView,
@@ -207,11 +208,15 @@ export default function VoteScreen() {
     complete: false,
   });
   const [saving, setSaving] = useState(false);
+  const [transitioning, setTransitioning] = useState(false);
   const [closed, setClosed] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
   const [savingGuide, setSavingGuide] = useState(false);
-  const completedAtEntry = useRef(false);
+  const [focused, setFocused] = useState(false);
+  const modeRef = useRef<"FIRST_PASS" | "EDITING" | null>(null);
+  const [mode, setMode] = useState<"FIRST_PASS" | "EDITING" | null>(null);
   const requestInFlight = useRef(false);
+  const [transition] = useState(() => new Animated.Value(0));
   const load = useCallback(async () => {
     const roundId = Number(id);
     if (!Number.isInteger(roundId) || roundId < 1) {
@@ -232,11 +237,13 @@ export default function VoteScreen() {
         total: next.ballot.eligible_count,
         complete: next.ballot.complete,
       });
-      completedAtEntry.current = next.ballot.complete;
+      if (modeRef.current === null) {
+        const initialMode = next.ballot.complete || review === "1" ? "EDITING" : "FIRST_PASS";
+        modeRef.current = initialMode;
+        setMode(initialMode);
+      }
       setClosed(next.round.state !== "voting");
       setShowGuide(next.show_voting_guide);
-      if (next.ballot.complete && review !== "1")
-        router.replace(`/round/${roundId}/vote/complete` as never);
       setIndex((current) =>
         Math.min(
           current,
@@ -254,11 +261,13 @@ export default function VoteScreen() {
       requestInFlight.current = false;
       setLoading(false);
     }
-  }, [id, refreshSession, review, router]);
+  }, [id, refreshSession, review]);
 
   useFocusEffect(
     useCallback(() => {
+      setFocused(true);
       void load();
+      return () => setFocused(false);
     }, [load]),
   );
 
@@ -266,6 +275,7 @@ export default function VoteScreen() {
   const current = tracks[index] ?? null;
   const currentScore = current ? scores[String(current.id)] : undefined;
   const isVoting = detail?.round.state === "voting" && !closed;
+  const firstPass = mode === "FIRST_PASS";
   const displayProgress = useMemo(
     () => `${progress.voted} of ${progress.total} rated`,
     [progress],
@@ -302,8 +312,27 @@ export default function VoteScreen() {
     setSavingGuide(false);
   };
 
+  const advanceFirstPass = (nextIndex: number) => {
+    setTransitioning(true);
+    transition.setValue(0);
+    Animated.timing(transition, {
+      duration: 180,
+      toValue: 1,
+      useNativeDriver: true,
+    }).start(({ finished }) => {
+      if (!finished) return;
+      setIndex(nextIndex);
+      transition.setValue(-1);
+      Animated.timing(transition, {
+        duration: 180,
+        toValue: 0,
+        useNativeDriver: true,
+      }).start(() => setTransitioning(false));
+    });
+  };
+
   const rate = async (score: number) => {
-    if (!current || saving || !isVoting) return;
+    if (!current || saving || transitioning || !isVoting) return;
     setSaving(true);
     setError(null);
     try {
@@ -314,10 +343,11 @@ export default function VoteScreen() {
         total: result.ballot.eligible_count,
         complete: result.ballot.complete,
       });
-      if (result.ballot.complete && !completedAtEntry.current) {
-        completedAtEntry.current = true;
+      if (result.ballot.complete && firstPass) {
         router.replace(`/round/${id}/vote/complete` as never);
-      } else if (index < tracks.length - 1) setIndex((value) => value + 1);
+      } else if (firstPass && index < tracks.length - 1) {
+        advanceFirstPass(index + 1);
+      }
     } catch (cause) {
       const apiError =
         cause instanceof ApiError
@@ -418,9 +448,27 @@ export default function VoteScreen() {
             ]}
           />
         </View>
-        <View style={styles.card}>
+        <Animated.View
+          style={[
+            styles.card,
+            {
+              opacity: transition.interpolate({
+                inputRange: [-1, 0, 1],
+                outputRange: [0, 1, 0.2],
+              }),
+              transform: [
+                {
+                  translateX: transition.interpolate({
+                    inputRange: [-1, 0, 1],
+                    outputRange: [24, 0, -24],
+                  }),
+                },
+              ],
+            },
+          ]}
+        >
           <Text style={styles.anonymous}>ANONYMOUS SONG</Text>
-          <SpotifyEmbed trackId={current.spotify_track_id} />
+          {focused ? <SpotifyEmbed trackId={current.spotify_track_id} /> : null}
           <Text style={styles.ratePrompt}>
             How well does this fit the prompt?
           </Text>
@@ -460,29 +508,40 @@ export default function VoteScreen() {
           <Text accessibilityLiveRegion="polite" style={styles.selectedRating}>
             {currentScore
               ? `Your rating: ${currentScore} out of 5`
-              : "Choose a rating to save and continue."}
+              : firstPass
+                ? "Choose a rating to save and continue."
+                : "Choose a rating to save."
+            }
           </Text>
           {saving ? <Text style={styles.saving}>Saving rating…</Text> : null}
           {error ? <ErrorMessage message={error.message} /> : null}
-        </View>
+        </Animated.View>
+        {focused && tracks[index + 1] ? (
+          <View pointerEvents="none" style={styles.previewPreload}>
+            <SpotifyEmbed trackId={tracks[index + 1].spotify_track_id} />
+          </View>
+        ) : null}
         <Text style={styles.rule}>
           Rate every song for your ballot to count.
         </Text>
-        <View style={styles.navigation}>
-          <Action
-            disabled={index === 0 || saving}
-            secondary
-            onPress={() => setIndex((value) => value - 1)}
-          >
-            Previous
-          </Action>
-          <Action
-            disabled={!currentScore || saving || index === tracks.length - 1}
-            onPress={() => setIndex((value) => value + 1)}
-          >
-            Next
-          </Action>
-        </View>
+        {!firstPass ? (
+          <View style={styles.navigation}>
+            <Action
+              disabled={index === 0 || saving}
+              secondary
+              onPress={() => setIndex((value) => value - 1)}
+            >
+              Previous
+            </Action>
+            <Action
+              disabled={index === tracks.length - 1 || saving}
+              secondary
+              onPress={() => setIndex((value) => value + 1)}
+            >
+              Next
+            </Action>
+          </View>
+        ) : null}
       </ScrollView>
       {showGuide ? (
         <VotingGuideModal
@@ -568,6 +627,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     gap: Spacing.sm,
     padding: Spacing.lg,
+  },
+  previewPreload: {
+    height: 1,
+    opacity: 0,
+    overflow: "hidden",
+    width: 1,
   },
   anonymous: {
     color: colors.brandLight,
