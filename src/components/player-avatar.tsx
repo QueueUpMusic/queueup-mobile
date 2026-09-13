@@ -1,4 +1,5 @@
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
+import { CachedImage } from '@/components/cached-image';
 import { resolveServerUrl } from '@/config/server';
 import { colors } from '@/constants/theme';
 import { SessionUser, UserSummary } from '@/types';
@@ -11,7 +12,7 @@ export function PlayerAvatar({ user, size = 42, pictureUrl: pictureUrlOverride }
   const radius = size / 2;
 
   return <View style={[styles.avatar, { borderRadius: radius, height: size, width: size }]}>
-    {pictureUrl ? <Image accessibilityLabel={`${user.display_name} profile picture`} source={{ uri: pictureUrl }} style={styles.image} /> : <Text style={[styles.initial, { fontSize: Math.max(14, size * 0.4) }]}>{initial}</Text>}
+    {pictureUrl ? <CachedImage accessibilityLabel={`${user.display_name} profile picture`} source={{ uri: pictureUrl }} style={styles.image} /> : <Text style={[styles.initial, { fontSize: Math.max(14, size * 0.4) }]}>{initial}</Text>}
   </View>;
 }
 

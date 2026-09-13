@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import { ActivityIndicator, Image, Linking, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Linking, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Action, ErrorMessage } from '@/components/auth-ui';
@@ -10,6 +10,7 @@ import { getRoundDetail } from '@/lib/api';
 import { useLiveRefresh } from '@/hooks/use-live-refresh';
 import { ApiError, RevealedSubmission, RoundDetailResponse, RoundSummary, SubmissionTrack } from '@/types';
 import { ProfileLink } from '@/components/profile-link';
+import { CachedImage } from '@/components/cached-image';
 
 function formatDate(value: string | null) { return value ? new Date(value).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : 'Not set'; }
 function stateLabel(state: string) { return state.replace('_', ' ').toUpperCase(); }
@@ -20,7 +21,7 @@ function formatPlace(place: number | undefined, tied = false) {
 }
 
 function Artwork({ track, large = false }: { track: SubmissionTrack; large?: boolean }) {
-  return track.album_art_url ? <Image accessibilityLabel={`${track.album} artwork`} resizeMode="cover" source={{ uri: track.album_art_url }} style={large ? styles.winnerArtwork : styles.artwork} /> : <View style={large ? styles.winnerArtwork : styles.artwork}><Text style={styles.artworkFallback}>♫</Text></View>;
+  return track.album_art_url ? <CachedImage accessibilityLabel={`${track.album} artwork`} contentFit="cover" source={{ uri: track.album_art_url }} style={large ? styles.winnerArtwork : styles.artwork} /> : <View style={large ? styles.winnerArtwork : styles.artwork}><Text style={styles.artworkFallback}>♫</Text></View>;
 }
 
 function RoundHeader({ round, onBack }: { round: RoundSummary; onBack: () => void }) {

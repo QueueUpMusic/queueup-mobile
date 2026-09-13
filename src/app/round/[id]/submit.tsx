@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
-  Image,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -40,6 +39,7 @@ import {
   SubmissionTrack,
 } from "@/types";
 import { useLiveRefresh } from "@/hooks/use-live-refresh";
+import { CachedImage } from "@/components/cached-image";
 
 type ScreenState = "search" | "review" | "success";
 const queueUpLogo = require("../../../../assets/images/queueup-logo.png");
@@ -53,9 +53,9 @@ function Artwork({
 }) {
   const uri = "art" in track ? track.art : track.album_art_url;
   return uri ? (
-    <Image
+    <CachedImage
       accessibilityLabel={`${track.album} artwork`}
-      resizeMode="cover"
+      contentFit="cover"
       source={{ uri }}
       style={large ? styles.successArtwork : styles.artwork}
     />
@@ -572,7 +572,7 @@ export default function SubmitSongScreen() {
       >
         <View style={styles.modalBackdrop}>
           <View accessibilityViewIsModal style={styles.modalCard}>
-            <Image
+            <CachedImage
               accessibilityLabel="QueueUp logo"
               source={queueUpLogo}
               style={styles.modalLogo}
@@ -631,7 +631,7 @@ export default function SubmitSongScreen() {
       >
         <View style={styles.modalBackdrop}>
           <View accessibilityViewIsModal style={styles.modalCard}>
-            <Image
+            <CachedImage
               accessibilityLabel="QueueUp logo"
               source={queueUpLogo}
               style={styles.modalLogo}
