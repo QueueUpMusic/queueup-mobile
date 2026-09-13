@@ -461,6 +461,7 @@ export default function VoteScreen() {
           />
         </View>
         <Animated.View
+          key={String(current.id)}
           style={[
             styles.card,
             {
