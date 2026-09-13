@@ -2,6 +2,7 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
+  Easing,
   Modal,
   Pressable,
   ScrollView,
@@ -312,23 +313,34 @@ export default function VoteScreen() {
     setSavingGuide(false);
   };
 
-  const advanceFirstPass = (nextIndex: number) => {
+  const transitionToIndex = (nextIndex: number, direction: 1 | -1) => {
+    if (nextIndex === index || transitioning) return;
     setTransitioning(true);
+    transition.stopAnimation();
     transition.setValue(0);
     Animated.timing(transition, {
-      duration: 180,
-      toValue: 1,
+      duration: 150,
+      easing: Easing.out(Easing.cubic),
+      toValue: direction,
       useNativeDriver: true,
     }).start(({ finished }) => {
-      if (!finished) return;
+      if (!finished) {
+        setTransitioning(false);
+        return;
+      }
       setIndex(nextIndex);
-      transition.setValue(-1);
+      transition.setValue(-direction);
       Animated.timing(transition, {
-        duration: 180,
+        duration: 220,
+        easing: Easing.out(Easing.cubic),
         toValue: 0,
         useNativeDriver: true,
       }).start(() => setTransitioning(false));
     });
+  };
+
+  const advanceFirstPass = (nextIndex: number) => {
+    transitionToIndex(nextIndex, -1);
   };
 
   const rate = async (score: number) => {
@@ -454,13 +466,13 @@ export default function VoteScreen() {
             {
               opacity: transition.interpolate({
                 inputRange: [-1, 0, 1],
-                outputRange: [0, 1, 0.2],
+                outputRange: [0.35, 1, 0.35],
               }),
               transform: [
                 {
                   translateX: transition.interpolate({
                     inputRange: [-1, 0, 1],
-                    outputRange: [24, 0, -24],
+                    outputRange: [-340, 0, 340],
                   }),
                 },
               ],
@@ -527,16 +539,16 @@ export default function VoteScreen() {
         {!firstPass ? (
           <View style={styles.navigation}>
             <Action
-              disabled={index === 0 || saving}
+              disabled={index === 0 || saving || transitioning}
               secondary
-              onPress={() => setIndex((value) => value - 1)}
+              onPress={() => transitionToIndex(index - 1, 1)}
             >
               Previous
             </Action>
             <Action
-              disabled={index === tracks.length - 1 || saving}
+              disabled={index === tracks.length - 1 || saving || transitioning}
               secondary
-              onPress={() => setIndex((value) => value + 1)}
+              onPress={() => transitionToIndex(index + 1, -1)}
             >
               Next
             </Action>
