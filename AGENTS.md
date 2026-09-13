@@ -2,6 +2,8 @@
 
 Read the exact versioned docs at https://docs.expo.dev/versions/v57.0.0/ before writing any code.
 
+If `CODEX_REMOTE_HOST.md` exists, read and follow it for local Codex Remote Control, EAS, ADB, emulator, and host-PTY instructions.
+
 QueueUp Mobile Build & Release Reference
 ========================================
 
