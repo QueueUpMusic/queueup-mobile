@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Animated, Easing, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Checkmark, ChevronDown } from '@/components/queueup-icon';
 import { colors, Radii, Spacing } from '@/constants/theme';
 import { SeasonSummary } from '@/types';
@@ -18,7 +18,20 @@ export function SeasonPicker({
   onSelect: (seasonId: number) => void;
 }) {
   const [visible, setVisible] = useState(false);
+  const [sheetTranslate] = useState(() => new Animated.Value(1));
   const selected = seasons.find((season) => season.id === selectedId);
+
+  useEffect(() => {
+    if (!visible) return;
+    sheetTranslate.setValue(1);
+    Animated.timing(sheetTranslate, { duration: 220, easing: Easing.out(Easing.cubic), toValue: 0, useNativeDriver: true }).start();
+  }, [sheetTranslate, visible]);
+
+  const close = () => {
+    Animated.timing(sheetTranslate, { duration: 170, easing: Easing.in(Easing.cubic), toValue: 1, useNativeDriver: true }).start(({ finished }) => {
+      if (finished) setVisible(false);
+    });
+  };
 
   return <>
     <Pressable accessibilityHint="Opens the season list" accessibilityLabel="Choose season" accessibilityRole="button" onPress={() => setVisible(true)} style={({ pressed }) => [styles.selector, pressed && styles.pressed]}>
@@ -28,18 +41,18 @@ export function SeasonPicker({
       </View>
       <ChevronDown color={colors.brand} size={21} />
     </Pressable>
-    <Modal animationType="slide" onRequestClose={() => setVisible(false)} presentationStyle="overFullScreen" transparent visible={visible}>
+    <Modal animationType="none" onRequestClose={close} presentationStyle="overFullScreen" transparent visible={visible}>
       <View style={styles.modalRoot}>
-        <Pressable accessibilityLabel="Close season selector" onPress={() => setVisible(false)} style={styles.modalBackdrop} />
-        <View style={styles.sheet}>
+        <Pressable accessibilityLabel="Close season selector" onPress={close} style={styles.modalBackdrop} />
+        <Animated.View style={[styles.sheet, { transform: [{ translateY: sheetTranslate.interpolate({ inputRange: [0, 1], outputRange: [0, 420] }) }] }]}>
           <View style={styles.sheetHeader}>
             <Text style={styles.sheetTitle}>Choose a season</Text>
-            <Pressable accessibilityLabel="Close season selector" accessibilityRole="button" onPress={() => setVisible(false)} style={styles.sheetClose}>
+            <Pressable accessibilityLabel="Close season selector" accessibilityRole="button" onPress={close} style={styles.sheetClose}>
               <Text style={styles.sheetCloseText}>×</Text>
             </Pressable>
           </View>
           <ScrollView contentContainerStyle={styles.sheetList}>
-            {seasons.map((season) => <Pressable accessibilityRole="button" key={season.id} onPress={() => { setVisible(false); onSelect(season.id); }} style={({ pressed }) => [styles.seasonOption, season.id === selectedId && styles.selectedSeasonOption, pressed && styles.pressed]}>
+            {seasons.map((season) => <Pressable accessibilityRole="button" key={season.id} onPress={() => { close(); onSelect(season.id); }} style={({ pressed }) => [styles.seasonOption, season.id === selectedId && styles.selectedSeasonOption, pressed && styles.pressed]}>
               <View style={styles.seasonOptionCopy}>
                 <Text style={styles.seasonOptionName}>{season.name}</Text>
                 {season.active ? <Text style={styles.activeLabel}>Active</Text> : null}
@@ -47,7 +60,7 @@ export function SeasonPicker({
               {season.id === selectedId ? <Checkmark color={colors.brand} size={22} /> : null}
             </Pressable>)}
           </ScrollView>
-        </View>
+        </Animated.View>
       </View>
     </Modal>
   </>;
