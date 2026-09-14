@@ -410,6 +410,10 @@ export class ApiError extends Error {
     return err;
   }
 
+  static offlineError(): ApiError {
+    return new ApiError('Your internet is disconnected.', 'NO_INTERNET', undefined, true);
+  }
+
   /**
    * Create an ApiError from an HTTP status code.
    */

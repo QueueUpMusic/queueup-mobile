@@ -2,6 +2,7 @@ import { createContext, PropsWithChildren, useCallback, useContext, useEffect, u
 import { acknowledgeNativePushPrompt, clearCsrfToken, getCsrfToken, getOnboarding, getProfile, getSession, login as apiLogin, logout as apiLogout, signup as apiSignup } from '@/lib/api';
 import { ApiError, AuthStatus, OnboardingResponse, SessionResponse, SessionUser } from '@/types';
 import { addNativePushTokenListener, refreshNativePushRegistration, unregisterNativePush } from '@/lib/native-push';
+import * as Network from 'expo-network';
 
 type AuthContextValue = {
   status: AuthStatus;
@@ -53,7 +54,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
         setProfilePictureUrl(null);
         setStatus('logged_out');
       } else if (!silent) {
-        setError(apiError);
+        const networkState = await Network.getNetworkStateAsync().catch(() => null);
+        setError(networkState?.isConnected === false || networkState?.isInternetReachable === false ? ApiError.offlineError() : apiError);
         setStatus('network_error');
       }
     }
