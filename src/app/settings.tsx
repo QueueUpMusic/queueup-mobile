@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react';
 import { ActivityIndicator, Alert, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ChevronLeft, LogOutIcon } from '@/components/queueup-icon';
+import { ArrowRight, ChevronLeft, LogOutIcon } from '@/components/queueup-icon';
 import { colors, Radii, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/auth';
 import { disableNativePush, enableNativePush, getNativePushStatus, NativePushStatus, scheduleLocalTestNotification } from '@/lib/native-push';
@@ -47,10 +47,12 @@ export default function SettingsScreen() {
 
   return <SafeAreaView edges={['top', 'bottom']} style={styles.screen}>
     <View style={styles.header}><Pressable accessibilityLabel="Go back" accessibilityRole="button" hitSlop={8} onPress={() => router.back()} style={({ pressed }) => [styles.back, pressed && styles.pressed]}><ChevronLeft color={colors.brand} size={24} /><Text style={styles.backLabel}>Profile</Text></Pressable><Text style={styles.headerTitle}>Settings</Text><View style={styles.headerSpacer} /></View>
-    <View style={styles.content}><Text style={styles.title}>Settings</Text><Text style={styles.subtitle}>Account and app preferences will live here.</Text>
+    <View style={styles.content}><Text style={styles.title}>Settings</Text><Text style={styles.subtitle}>Manage your QueueUp experience.</Text>
       <View style={styles.section}><Text style={styles.sectionTitle}>Notifications</Text><Text style={styles.sectionDescription}>{pushStatus?.permission === 'denied' ? 'Permission denied in device settings.' : pushStatus?.registered ? 'QueueUp notifications are enabled on this device.' : 'Get updates when rounds open, voting starts, and results are ready.'}</Text>
         {pushStatus?.permission === 'denied' ? <Pressable accessibilityRole="button" onPress={() => void Linking.openSettings()} style={({ pressed }) => [styles.actionButton, pressed && styles.pressed]}><Text style={styles.actionText}>Open system settings</Text></Pressable> : pushStatus?.registered ? <Pressable accessibilityRole="button" disabled={pushBusy} onPress={() => void disableNotifications()} style={({ pressed }) => [styles.actionButton, pressed && styles.pressed, pushBusy && styles.disabled]}><Text style={styles.actionText}>{pushBusy ? 'Updating…' : 'Disable QueueUp notifications'}</Text></Pressable> : <Pressable accessibilityRole="button" disabled={pushBusy} onPress={() => void enableNotifications()} style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed, pushBusy && styles.disabled]}><Text style={styles.primaryText}>{pushBusy ? 'Enabling…' : 'Enable notifications'}</Text></Pressable>}
-      </View><View style={styles.divider} />
+      </View>
+      <Pressable accessibilityHint="Opens information about QueueUp" accessibilityRole="button" onPress={() => router.push('/about' as never)} style={({ pressed }) => [styles.aboutButton, pressed && styles.pressed]}><View><Text style={styles.aboutTitle}>About this app</Text><Text style={styles.aboutCopy}>Version and app information</Text></View><ArrowRight color={colors.brandLight} size={20} /></Pressable>
+      <View style={styles.divider} />
       <Pressable accessibilityRole="button" disabled={loggingOut} onPress={() => void handleLogout()} style={({ pressed }) => [styles.logoutButton, pressed && styles.pressed, loggingOut && styles.disabled]}><View style={styles.logoutContent}>{loggingOut ? <ActivityIndicator color={colors.text} /> : <LogOutIcon color={colors.text} size={21} />}<Text style={styles.logoutText}>{loggingOut ? 'Logging out…' : 'Log out'}</Text></View></Pressable>
       {__DEV__ && <Pressable accessibilityRole="button" onPress={() => void scheduleLocalTestNotification().then(() => Alert.alert('Test notification scheduled', 'The local notification will appear shortly.')).catch(() => Alert.alert('Notification unavailable', 'Local notifications could not be scheduled on this device.'))} style={({ pressed }) => [styles.testButton, pressed && styles.pressed]}><Text style={styles.testButtonText}>Send local notification test</Text></Pressable>}
     </View>
@@ -70,6 +72,9 @@ const styles = StyleSheet.create({
   section: { backgroundColor: colors.surfaceElevated, borderColor: colors.border, borderRadius: Radii.medium, borderWidth: 1, gap: Spacing.sm, padding: Spacing.lg },
   sectionTitle: { color: colors.text, fontSize: 18, fontWeight: '900' },
   sectionDescription: { color: colors.textMuted, fontSize: 14, lineHeight: 21 },
+  aboutButton: { alignItems: 'center', backgroundColor: colors.surfaceElevated, borderColor: colors.border, borderRadius: Radii.medium, borderWidth: 1, flexDirection: 'row', justifyContent: 'space-between', minHeight: 68, paddingHorizontal: Spacing.lg },
+  aboutTitle: { color: colors.text, fontSize: 16, fontWeight: '800' },
+  aboutCopy: { color: colors.textMuted, fontSize: 13, marginTop: 3 },
   primaryButton: { alignItems: 'center', backgroundColor: colors.brand, borderRadius: Radii.small, justifyContent: 'center', minHeight: 48, paddingHorizontal: Spacing.md },
   primaryText: { color: colors.background, fontSize: 14, fontWeight: '900' },
   actionButton: { alignItems: 'center', borderColor: colors.borderSoft, borderRadius: Radii.small, borderWidth: 1, justifyContent: 'center', minHeight: 44, paddingHorizontal: Spacing.md },
