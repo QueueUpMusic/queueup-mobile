@@ -20,55 +20,70 @@ Expo does not automatically notify the receiver when a build starts.
 
 Therefore, whenever an agent starts an EAS cloud build, the agent MUST notify the receiver after EAS has successfully accepted and created the build.
 
-Endpoint:
+Do not construct the notification request manually with `curl`.
 
-```text
-POST https://queueup-ntfy-receiver.kingdmvr.com/build-started
+Always use the repository notification script:
+
+```bash
+./scripts/notify-eas-build-started.sh <platform>
 ```
 
-JSON body:
-
-```json
-{
-  "project": "QueueUp",
-  "platform": "ios"
-}
-```
-
-Valid `platform` values are:
+Valid platform values are:
 
 - `ios`
 - `android`
 - `all`
 
+Examples:
+
+```bash
+./scripts/notify-eas-build-started.sh ios
+```
+
+```bash
+./scripts/notify-eas-build-started.sh android
+```
+
+```bash
+./scripts/notify-eas-build-started.sh all
+```
+
 ## Required Agent Procedure
 
 For EVERY `eas build` command:
 
-1. Start the requested EAS build using the appropriate profile.
-2. Wait until EAS has successfully accepted/created the build.
-3. Immediately call the build-started notification endpoint.
-4. Continue with the requested work normally.
+1. Read this file before starting the build.
+2. Determine the requested platform and EAS profile.
+3. Start the requested EAS build using the appropriate command from `AGENTS.md`.
+4. Wait until EAS has successfully accepted and created the build.
+5. Immediately run the repository notification script with the correct platform.
+6. Verify that the notification script exits successfully.
+7. Continue with the requested work normally.
+
+Do NOT send the build-started notification before EAS has actually accepted and created the build.
 
 Do NOT send the build-started notification if the EAS command fails before a build is created.
 
 Do NOT send the build-started notification twice for the same build.
 
-A notification failure does NOT mean the EAS build failed. If the notification request fails, report that failure separately. Do not restart or cancel an otherwise successful EAS build.
+Do NOT manually construct the HTTP request.
 
-## Notification Command
-
-After EAS accepts the build, run:
+Always use:
 
 ```bash
-curl --fail --silent --show-error \
-  -X POST \
-  -H "Content-Type: application/json" \
-  -d '{"project":"QueueUp","platform":"ios"}' \
-  https://queueup-ntfy-receiver.kingdmvr.com/build-started
+./scripts/notify-eas-build-started.sh <platform>
 ```
 
-Replace `ios` with `android` or `all` as appropriate.
+## Notification Failure Behavior
+
+If the EAS build starts successfully but the notification script fails:
+
+1. Do not cancel the EAS build.
+2. Do not restart the EAS build.
+3. Report that the EAS build started successfully but the notification failed.
+4. Include the notification script's error output when useful.
+
+A notification failure does NOT mean the EAS build itself failed.
 
 ## iOS Example
 
@@ -78,14 +93,10 @@ Start the EAS build:
 eas build --platform ios --profile production
 ```
 
-After EAS accepts and creates the build, run:
+After EAS confirms that the build has been created, run:
 
 ```bash
-curl --fail --silent --show-error \
-  -X POST \
-  -H "Content-Type: application/json" \
-  -d '{"project":"QueueUp","platform":"ios"}' \
-  https://queueup-ntfy-receiver.kingdmvr.com/build-started
+./scripts/notify-eas-build-started.sh ios
 ```
 
 ## Android Example
@@ -96,14 +107,10 @@ Start the EAS build:
 eas build --platform android --profile production
 ```
 
-After EAS accepts and creates the build, run:
+After EAS confirms that the build has been created, run:
 
 ```bash
-curl --fail --silent --show-error \
-  -X POST \
-  -H "Content-Type: application/json" \
-  -d '{"project":"QueueUp","platform":"android"}' \
-  https://queueup-ntfy-receiver.kingdmvr.com/build-started
+./scripts/notify-eas-build-started.sh android
 ```
 
 ## Both Platforms Example
@@ -114,15 +121,27 @@ Start the EAS build:
 eas build --platform all --profile production
 ```
 
-After EAS accepts and creates the builds, run:
+After EAS confirms that the builds have been created, run:
 
 ```bash
-curl --fail --silent --show-error \
-  -X POST \
-  -H "Content-Type: application/json" \
-  -d '{"project":"QueueUp","platform":"all"}' \
-  https://queueup-ntfy-receiver.kingdmvr.com/build-started
+./scripts/notify-eas-build-started.sh all
 ```
+
+## Auto-Submit Example
+
+For:
+
+```bash
+eas build --platform ios --profile production --auto-submit
+```
+
+after EAS confirms that the build has been created, run:
+
+```bash
+./scripts/notify-eas-build-started.sh ios
+```
+
+The presence of `--auto-submit` does not change the notification procedure.
 
 ## EAS Profiles
 
@@ -133,13 +152,13 @@ The build-started notification requirement applies to all QueueUp Mobile EAS pro
 - `preview-prod`
 - `production`
 
-It also applies when additional EAS options are used, including:
+It applies regardless of profile.
 
-```bash
-eas build --platform ios --profile production --auto-submit
+It also applies regardless of whether the build uses additional EAS options such as:
+
+```text
+--auto-submit
 ```
-
-The presence of `--auto-submit` does not change the notification procedure.
 
 ## Completion Notifications
 
@@ -153,11 +172,13 @@ https://queueup-ntfy-receiver.kingdmvr.com/eas-webhook
 
 That webhook handles:
 
-- Successful builds
-- Failed builds
-- Canceled builds
+- successful builds
+- failed builds
+- canceled builds
 
-The agent does not need to call the completion endpoint or ntfy directly.
+The agent does not need to call the completion endpoint directly.
+
+The agent does not need to publish directly to ntfy.
 
 ## Scope
 
@@ -178,23 +199,33 @@ eas build:run
 
 It also does not apply to:
 
-- Direct Gradle builds
-- Starting Metro
-- Installing an already-completed EAS build
-- Running an Android emulator
-- Installing an APK with ADB
-- Submitting an already-existing build without creating a new EAS build
+- direct Gradle builds
+- starting Metro
+- installing an already-completed EAS build
+- running an Android emulator
+- installing an APK with ADB
+- submitting an already-existing build without creating a new EAS build
 
 ## Important Agent Rules
 
 Before starting ANY EAS cloud build:
 
-1. Read this file.
-2. Determine the requested platform and EAS profile.
-3. Use the build command documented in `AGENTS.md`.
-4. Start the EAS build.
-5. Confirm EAS successfully accepted/created the build.
-6. Send exactly one build-started notification.
-7. Allow Expo's configured webhook to handle the eventual completion notification.
+1. Read `EAS_NOTIFICATIONS.md`.
+2. Read the relevant build command in `AGENTS.md`.
+3. Start the requested EAS build.
+4. Confirm that EAS accepted and created the build.
+5. Run exactly one build-started notification script call.
+6. Verify the script succeeds.
+7. Let Expo's configured webhook handle completion, failure, or cancellation notifications.
 
-Never expose notification service credentials or Expo credentials in commits, logs, issue comments, or pull requests.
+Never expose notification service credentials or Expo credentials in:
+
+- commits
+- logs
+- issue comments
+- pull requests
+- documentation
+
+Do not edit the notification receiver URL directly into ad hoc shell commands.
+
+Use the repository script so notification behavior remains centralized and consistent.
