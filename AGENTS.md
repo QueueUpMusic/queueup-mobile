@@ -7,6 +7,10 @@ If `CODEX_REMOTE_HOST.md` exists, read and follow it for local Codex Remote Cont
 QueueUp Mobile Build & Release Reference
 ========================================
 
+Before starting ANY EAS cloud build, read and follow `EAS_NOTIFICATIONS.md`.
+Its build-started notification procedure is mandatory for every `eas build`
+command, regardless of profile or platform.
+
 This file is intended to live in the queueup-mobile repo so Codex (or a human)
 can build, install, test, and submit the correct variant without guessing.
 
