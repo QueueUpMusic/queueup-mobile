@@ -72,7 +72,9 @@ function HostCard({ host }: { host: NonNullable<RoundSummary['host']> }) {
 
 function RoundCard({ round, submission, isResults = false, ballotComplete = false }: { round: RoundSummary; submission: DashboardResponse['my_submission']; isResults?: boolean; ballotComplete?: boolean }) {
   const router = useRouter();
-  const primary = primaryLabel(round, isResults, ballotComplete);
+  const primary = submission && round.state === 'submitting'
+    ? null
+    : primaryLabel(round, isResults, ballotComplete);
   const isLocked = round.state === 'locked';
 
   return <Pressable accessibilityLabel={`Open round: ${round.prompt}`} accessibilityRole="button" onPress={() => router.push(`/round/${round.id}` as never)} style={({ pressed }) => [styles.card, pressed && styles.pressedCard]}>
