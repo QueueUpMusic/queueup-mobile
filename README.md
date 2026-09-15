@@ -1,64 +1,44 @@
-# Welcome to your Expo app 👋
+# QueueUp Mobile
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Native QueueUp app built with Expo SDK 57, React Native, TypeScript, and Expo Router.
 
-## Get started
-
-1. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Development
 
 ```bash
-npm run reset-project
+npm install
+npx expo start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Set `EXPO_PUBLIC_API_URL` in the local, gitignored `.env` to select the QueueUp API server. The default is the production server.
 
-### Other setup steps
+Useful checks:
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+```bash
+npx expo lint
+npx tsc --noEmit
+npx expo export --platform web
+git diff --check
+```
 
-## Learn more
+## Builds
 
-## Native authentication notes
+EAS is configured for the `@queueupmusic/queueup-mobile` project:
 
-The mobile app uses QueueUp's Django session cookie and keeps the CSRF token in
-memory. Cookie persistence across app restarts is not guaranteed by this code
-and must be physically validated in an Expo development build on iOS and
-Android. The web preview may also be blocked by backend CORS or SameSite rules;
-that does not change the native target or production backend security settings.
+```bash
+eas build --platform android --profile preview-dev
+eas build --platform ios --profile preview-dev
+eas build --platform ios --profile preview-prod
+eas build --platform all --profile production
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+`preview-dev` uses the development backend; `preview-prod` uses the production backend. iOS preview builds are internal/Ad Hoc builds for registered devices.
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## Project layout
 
-## Join the community
+- `src/app/` — Expo Router screens and routes
+- `src/components/` — shared UI
+- `src/context/` — authentication and session state
+- `src/lib/` — API and native services
+- `src/types/` — API/domain types
 
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+The app uses QueueUp’s authenticated Django session and CSRF-based API architecture. Backend API details are documented in `API_CONTRACT.md`.
