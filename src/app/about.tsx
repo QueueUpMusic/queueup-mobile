@@ -1,9 +1,12 @@
 import Constants from 'expo-constants';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeft } from '@/components/queueup-icon';
 import { colors, Spacing } from '@/constants/theme';
+
+const logo = require('../../assets/images/queueup-logo-transparent.png');
 
 export default function AboutScreen() {
   const router = useRouter();
@@ -11,7 +14,7 @@ export default function AboutScreen() {
 
   return <SafeAreaView edges={['top', 'bottom']} style={styles.screen}>
     <View style={styles.header}><Pressable accessibilityLabel="Go back to settings" accessibilityRole="button" onPress={() => router.back()} style={styles.back}><ChevronLeft color={colors.brand} size={24} /><Text style={styles.backLabel}>Settings</Text></Pressable><Text style={styles.headerTitle}>About</Text><View style={styles.spacer} /></View>
-    <View style={styles.content}><Text style={styles.title}>About this app</Text><Text style={styles.brand}>QueueUp</Text><Text style={styles.copyright}>Copyright QueueUp Music 2026</Text><View style={styles.info}><Text style={styles.label}>Version</Text><Text style={styles.value}>{version}</Text></View></View>
+    <View style={styles.content}><Image accessibilityLabel="QueueUp logo" contentFit="contain" source={logo} style={styles.logo} /><Text style={styles.title}>About this app</Text><Text style={styles.brand}>QueueUp</Text><Text style={styles.copyright}>Copyright QueueUp Music 2026</Text><Text style={styles.version}>Version {version}</Text></View>
   </SafeAreaView>;
 }
 
@@ -23,10 +26,9 @@ const styles = StyleSheet.create({
   headerTitle: { color: colors.text, fontSize: 17, fontWeight: '800' },
   spacer: { minWidth: 84 },
   content: { alignItems: 'center', gap: Spacing.md, padding: Spacing.xl },
-  title: { color: colors.text, fontSize: 30, fontWeight: '900', marginTop: Spacing.xl },
-  brand: { color: colors.brandLight, fontSize: 42, fontWeight: '900', marginTop: Spacing.xl },
+  logo: { height: 96, marginTop: Spacing.xl, width: 96 },
+  title: { color: colors.text, fontSize: 28, fontWeight: '700', marginTop: Spacing.lg },
+  brand: { color: colors.text, fontSize: 22, fontWeight: '600', marginTop: Spacing.lg },
   copyright: { color: colors.textMuted, fontSize: 15, textAlign: 'center' },
-  info: { alignItems: 'center', backgroundColor: colors.surfaceElevated, borderColor: colors.border, borderRadius: 12, borderWidth: 1, marginTop: Spacing.xl, minWidth: 180, padding: Spacing.lg },
-  label: { color: colors.textMuted, fontSize: 12, fontWeight: '800', textTransform: 'uppercase' },
-  value: { color: colors.text, fontSize: 18, fontWeight: '800', marginTop: Spacing.xs },
+  version: { color: colors.textMuted, fontSize: 14, marginTop: Spacing.xl },
 });
