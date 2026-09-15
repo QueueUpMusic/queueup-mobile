@@ -1,5 +1,7 @@
 # QueueUp Mobile
 
+![QueueUp logo](assets/images/queueup-logo-transparent.png)
+
 Native QueueUp app built with Expo SDK 57, React Native, TypeScript, and Expo Router.
 
 ## Development
