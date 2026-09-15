@@ -1,8 +1,9 @@
 import { useCallback, useRef, useState } from 'react';
-import { ActivityIndicator, Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Action, ErrorMessage } from '@/components/auth-ui';
 import { PlayerAvatar } from '@/components/player-avatar';
+import { CachedImage } from '@/components/cached-image';
 import { PlayerHeader } from '@/components/player-header';
 import { ArrowRight, ChevronLeft } from '@/components/queueup-icon';
 import { colors, Radii, Spacing } from '@/constants/theme';
@@ -10,6 +11,7 @@ import { useAuth } from '@/context/auth';
 import { getProfile } from '@/lib/api';
 import { useLiveRefresh } from '@/hooks/use-live-refresh';
 import { ApiError, ProfileBadge, ProfileResponse } from '@/types';
+import { resolveServerUrl } from '@/config/server';
 
 function formatAverage(value: number): string { return value.toFixed(2); }
 
@@ -52,6 +54,7 @@ export function ProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<ApiError | null>(null);
+  const [avatarExpanded, setAvatarExpanded] = useState(false);
   const requestInFlight = useRef(false);
 
   const load = useCallback(async (pull = false, background = false) => {
@@ -90,10 +93,16 @@ export function ProfileScreen() {
     <ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl colors={[colors.brand]} onRefresh={() => void load(true)} refreshing={refreshing} tintColor={colors.brand} />}>
       {error ? <View style={styles.inlineError}><Text style={styles.inlineErrorText}>Some profile updates may be unavailable. Pull to try again.</Text></View> : null}
       <View style={styles.hero}>
-        <PlayerAvatar size={96} user={player} />
+        {isOwnProfile || !player.picture_url ? <PlayerAvatar size={96} user={player} /> : <Pressable accessibilityHint="Enlarges the profile picture" accessibilityLabel={`View ${player.display_name}'s profile picture`} accessibilityRole="button" onPress={() => setAvatarExpanded(true)} style={({ pressed }) => [styles.avatarButton, pressed && styles.pressed]}><PlayerAvatar size={96} user={player} /></Pressable>}
         <Text style={styles.displayName}>{player.display_name}</Text>
         <Text style={styles.username}>@{player.username}</Text>
       </View>
+
+      {!isOwnProfile && player.picture_url ? <Modal animationType="fade" onRequestClose={() => setAvatarExpanded(false)} transparent visible={avatarExpanded}>
+        <Pressable accessibilityLabel="Close enlarged profile picture" accessibilityRole="button" onPress={() => setAvatarExpanded(false)} style={styles.avatarModalBackdrop}>
+          <CachedImage accessibilityLabel={`${player.display_name} profile picture`} contentFit="contain" source={{ uri: resolveServerUrl(player.picture_url) ?? undefined }} style={styles.enlargedAvatar} />
+        </Pressable>
+      </Modal> : null}
 
       {isOwnProfile ? <View style={styles.profileMenu}>
         <Pressable accessibilityHint="Edit your display name or profile picture" accessibilityRole="button" onPress={() => router.push('/profile/edit')} style={({ pressed }) => [styles.settingsRow, pressed && styles.pressed]}>
@@ -131,6 +140,9 @@ const styles = StyleSheet.create({
   content: { alignSelf: 'center', gap: Spacing.xl, maxWidth: 800, padding: Spacing.xl, paddingBottom: Spacing.xxxl, width: '100%' },
   centerState: { flex: 1, justifyContent: 'center', padding: Spacing.xl },
   hero: { alignItems: 'center', gap: Spacing.sm, paddingVertical: Spacing.lg },
+  avatarButton: { borderRadius: 52 },
+  avatarModalBackdrop: { alignItems: 'center', backgroundColor: 'rgba(0, 0, 0, 0.88)', flex: 1, justifyContent: 'center', padding: Spacing.xl },
+  enlargedAvatar: { aspectRatio: 1, borderRadius: 180, maxHeight: 360, maxWidth: 360, width: '100%' },
   displayName: { color: colors.text, fontSize: 34, fontWeight: '900', letterSpacing: -1, marginTop: Spacing.sm, textAlign: 'center' },
   username: { color: colors.textMuted, fontSize: 16 },
   metricGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
