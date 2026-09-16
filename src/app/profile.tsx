@@ -100,7 +100,9 @@ export function ProfileScreen() {
 
       {!isOwnProfile && player.picture_url ? <Modal animationType="fade" onRequestClose={() => setAvatarExpanded(false)} transparent visible={avatarExpanded}>
         <Pressable accessibilityLabel="Close enlarged profile picture" accessibilityRole="button" onPress={() => setAvatarExpanded(false)} style={styles.avatarModalBackdrop}>
-          <CachedImage accessibilityLabel={`${player.display_name} profile picture`} contentFit="contain" source={{ uri: resolveServerUrl(player.picture_url) ?? undefined }} style={styles.enlargedAvatar} />
+          <View style={styles.enlargedAvatarFrame}>
+            <CachedImage accessibilityLabel={`${player.display_name} profile picture`} contentFit="contain" source={{ uri: resolveServerUrl(player.picture_url) ?? undefined }} style={styles.enlargedAvatar} />
+          </View>
         </Pressable>
       </Modal> : null}
 
@@ -142,7 +144,8 @@ const styles = StyleSheet.create({
   hero: { alignItems: 'center', gap: Spacing.sm, paddingVertical: Spacing.lg },
   avatarButton: { borderRadius: 52 },
   avatarModalBackdrop: { alignItems: 'center', backgroundColor: 'rgba(0, 0, 0, 0.88)', flex: 1, justifyContent: 'center', padding: Spacing.xl },
-  enlargedAvatar: { aspectRatio: 1, borderRadius: 180, maxHeight: 360, maxWidth: 360, width: '100%' },
+  enlargedAvatarFrame: { aspectRatio: 1, maxHeight: 360, maxWidth: 360, width: '100%' },
+  enlargedAvatar: { height: '100%', width: '100%' },
   displayName: { color: colors.text, fontSize: 34, fontWeight: '900', letterSpacing: -1, marginTop: Spacing.sm, textAlign: 'center' },
   username: { color: colors.textMuted, fontSize: 16 },
   metricGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
