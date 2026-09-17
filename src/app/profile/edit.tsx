@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Action, ErrorMessage, Field } from '@/components/auth-ui';
@@ -21,7 +22,7 @@ function photoName(uri: string, mimeType?: string | null, fileName?: string | nu
 
 export default function EditProfileScreen() {
   const router = useRouter();
-  const { user, refresh: refreshSession } = useAuth();
+  const { user, refresh: refreshSession, refreshProfilePicture } = useAuth();
   const [profile, setProfile] = useState<ProfileResponse | null>(null);
   const [displayName, setDisplayName] = useState(user?.display_name ?? '');
   const [email, setEmail] = useState(user?.email ?? '');
@@ -56,13 +57,6 @@ export default function EditProfileScreen() {
   }, [load]);
 
   const pickPhoto = async () => {
-    let ImagePicker: typeof import('expo-image-picker');
-    try {
-      ImagePicker = await import('expo-image-picker');
-    } catch {
-      Alert.alert('Photo picker unavailable', 'Please use the signed Expo Go SDK 57 build or a development build rebuilt with the latest app dependencies.');
-      return;
-    }
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
       Alert.alert('Photo access needed', 'Allow QueueUp to access your photos so you can choose a profile picture.');
@@ -103,6 +97,7 @@ export default function EditProfileScreen() {
         await updateProfile({ display_name: displayName.trim(), email: email.trim() });
       }
       await refreshSession();
+      await refreshProfilePicture();
       router.back();
     } catch (cause) {
       const apiError = cause instanceof ApiError ? cause : ApiError.networkError('Unable to save your profile.');

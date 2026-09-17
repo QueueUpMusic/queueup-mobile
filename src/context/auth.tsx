@@ -8,6 +8,7 @@ type AuthContextValue = {
   status: AuthStatus;
   user: SessionUser | null;
   profilePictureUrl: string | null;
+  refreshProfilePicture: () => Promise<void>;
   onboarding: OnboardingResponse | null;
   acknowledgeNativePushPrompt: () => Promise<void>;
   error: ApiError | null;
@@ -143,7 +144,17 @@ export function AuthProvider({ children }: PropsWithChildren) {
     setStatus('logged_out');
   }, []);
 
-  const value = useMemo(() => ({ status, user, profilePictureUrl, onboarding, acknowledgeNativePushPrompt: acknowledgePrompt, error, refresh, login, signup, logout }), [status, user, profilePictureUrl, onboarding, acknowledgePrompt, error, refresh, login, signup, logout]);
+  const refreshProfilePicture = useCallback(async () => {
+    if (!user?.username) return;
+    try {
+      const profile = await getProfile(user.username);
+      setProfilePictureUrl(profile.player.picture_url);
+    } catch {
+      // The shared header can keep its initials fallback if this refresh fails.
+    }
+  }, [user]);
+
+  const value = useMemo(() => ({ status, user, profilePictureUrl, refreshProfilePicture, onboarding, acknowledgeNativePushPrompt: acknowledgePrompt, error, refresh, login, signup, logout }), [status, user, profilePictureUrl, refreshProfilePicture, onboarding, acknowledgePrompt, error, refresh, login, signup, logout]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
