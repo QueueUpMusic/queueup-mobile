@@ -33,7 +33,9 @@ function LeaderboardRow({ entry, currentUserId, badge }: { entry: LeaderboardEnt
   const isCurrentUser = entry.player.id === currentUserId;
   const place = `${entry.tied ? 'T-' : ''}#${entry.place}`;
   const metadata = formatRounds(entry.rounds_played);
-  const showBadge = Boolean(badge) && entry.player.username.length <= 18;
+  const showBadge = Boolean(badge)
+    && entry.player.username.length <= 18
+    && entry.player.display_name.length <= 12;
 
   return <View style={[styles.rankRow, isCurrentUser && styles.currentUserRow]}>
     <Text style={[styles.rankPlace, entry.place <= 3 && styles.topRankPlace]}>{place}</Text>
