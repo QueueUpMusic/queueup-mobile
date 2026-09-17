@@ -38,7 +38,7 @@ function LeaderboardRow({ entry, currentUserId, badge }: { entry: LeaderboardEnt
     <Text style={[styles.rankPlace, entry.place <= 3 && styles.topRankPlace]}>{place}</Text>
     <Avatar player={entry.player} />
     <View style={styles.playerCopy}>
-      <View style={styles.nameLine}><ProfileLink displayName={entry.player.display_name} style={styles.playerName} username={entry.player.username} />{badge ? <View accessibilityLabel={`${badge.name} badge`} style={styles.badge}><Text style={styles.badgeIcon}>{badge.icon}</Text><Text numberOfLines={1} style={styles.badgeName}>{badge.name}</Text></View> : null}</View>
+      <View style={styles.nameLine}><ProfileLink displayName={entry.player.display_name} style={entry.player.display_name.length > 18 ? styles.longPlayerName : styles.playerName} username={entry.player.username} />{badge ? <View accessibilityLabel={`${badge.name} badge`} style={styles.badge}><Text style={styles.badgeIcon}>{badge.icon}</Text></View> : null}</View>
       <Text numberOfLines={1} style={styles.playerMeta}>{metadata}</Text>
     </View>
     <Text numberOfLines={1} style={styles.points}>{entry.total_score.toLocaleString()} pts</Text>
@@ -146,12 +146,12 @@ const styles = StyleSheet.create({
   avatar: { alignItems: 'center', backgroundColor: colors.surfaceHighest, borderColor: colors.border, borderRadius: 21, borderWidth: 1, height: 42, justifyContent: 'center', overflow: 'hidden', width: 42 },
   avatarImage: { height: '100%', width: '100%' },
   avatarInitial: { color: colors.brandLight, fontSize: 17, fontWeight: '900' },
-  playerCopy: { flex: 1, gap: 3, minWidth: 0 },
+  playerCopy: { flex: 1, gap: 3, minWidth: 0, overflow: 'hidden' },
   nameLine: { alignItems: 'center', flexDirection: 'row', gap: Spacing.xs, minWidth: 0 },
   playerName: { color: colors.text, fontSize: 16, fontWeight: '800' },
-  badge: { alignItems: 'center', backgroundColor: 'rgba(32, 223, 114, 0.12)', borderColor: 'rgba(32, 223, 114, 0.28)', borderRadius: 10, borderWidth: 1, flexDirection: 'row', gap: 3, maxWidth: 150, paddingHorizontal: 6, paddingVertical: 2 },
-  badgeIcon: { fontSize: 12 },
-  badgeName: { color: colors.brandLight, fontSize: 10, fontWeight: '800' },
+  longPlayerName: { color: colors.text, fontSize: 13, fontWeight: '800' },
+  badge: { alignItems: 'center', backgroundColor: 'rgba(32, 223, 114, 0.12)', borderColor: 'rgba(32, 223, 114, 0.28)', borderRadius: 10, borderWidth: 1, height: 24, justifyContent: 'center', width: 24 },
+  badgeIcon: { fontSize: 13 },
   playerMeta: { color: colors.textMuted, fontSize: 12 },
   points: { color: colors.text, flexShrink: 0, fontSize: 17, fontWeight: '900', textAlign: 'right' },
   empty: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.borderSoft, borderRadius: Radii.medium, borderWidth: 1, gap: Spacing.sm, justifyContent: 'center', minHeight: 220, padding: Spacing.xl },
