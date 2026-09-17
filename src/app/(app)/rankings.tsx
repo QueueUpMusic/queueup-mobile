@@ -7,10 +7,10 @@ import { defaultSeasonId, SeasonPicker } from '@/components/season-picker';
 import { colors, Radii, Spacing } from '@/constants/theme';
 import { resolveServerUrl } from '@/config/server';
 import { useAuth } from '@/context/auth';
-import { getLeaderboard } from '@/lib/api';
+import { getLeaderboard, getProfile } from '@/lib/api';
 import { useLiveRefresh } from '@/hooks/use-live-refresh';
 import { ProfileLink } from '@/components/profile-link';
-import { ApiError, LeaderboardEntry, LeaderboardResponse, SeasonSummary, UserSummary } from '@/types';
+import { ApiError, LeaderboardEntry, LeaderboardResponse, ProfilePrestigeBadge, SeasonSummary, UserSummary } from '@/types';
 
 function formatSeasonDate(value: string | null): string {
   return value ? new Date(value).toLocaleDateString(undefined, { month: 'short', year: 'numeric' }) : 'Date unavailable';
@@ -29,7 +29,7 @@ function Avatar({ player }: { player: UserSummary }) {
   </View>;
 }
 
-function LeaderboardRow({ entry, currentUserId }: { entry: LeaderboardEntry; currentUserId: number | null }) {
+function LeaderboardRow({ entry, currentUserId, badge }: { entry: LeaderboardEntry; currentUserId: number | null; badge?: ProfilePrestigeBadge }) {
   const isCurrentUser = entry.player.id === currentUserId;
   const place = `${entry.tied ? 'T-' : ''}#${entry.place}`;
   const metadata = `${formatRounds(entry.rounds_played)} · ${entry.submission_bonus} submission ${entry.submission_bonus === 1 ? 'point' : 'points'}`;
@@ -38,7 +38,7 @@ function LeaderboardRow({ entry, currentUserId }: { entry: LeaderboardEntry; cur
     <Text style={[styles.rankPlace, entry.place <= 3 && styles.topRankPlace]}>{place}</Text>
     <Avatar player={entry.player} />
     <View style={styles.playerCopy}>
-      <ProfileLink displayName={entry.player.display_name} style={styles.playerName} username={entry.player.username} />
+      <View style={styles.nameLine}><ProfileLink displayName={entry.player.display_name} style={styles.playerName} username={entry.player.username} />{badge ? <View accessibilityLabel={`${badge.name} badge`} style={styles.badge}><Text style={styles.badgeIcon}>{badge.icon}</Text><Text numberOfLines={1} style={styles.badgeName}>{badge.name}</Text></View> : null}</View>
       <Text numberOfLines={1} style={styles.playerMeta}>{metadata}</Text>
     </View>
     <Text numberOfLines={1} style={styles.points}>{entry.total_score.toLocaleString()} pts</Text>
@@ -59,6 +59,7 @@ export default function RankingsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<ApiError | null>(null);
+  const [bestBadges, setBestBadges] = useState<Record<number, ProfilePrestigeBadge>>({});
   const requestInFlight = useRef(false);
 
   const load = useCallback(async (seasonId?: number, pull = false, background = false) => {
@@ -69,6 +70,15 @@ export default function RankingsScreen() {
     try {
       const next = await getLeaderboard(seasonId);
       setData(next);
+      const badgeEntries = await Promise.all(next.leaderboard.map(async (entry) => {
+        try {
+          const profile = await getProfile(entry.player.username, next.season?.id);
+          return profile.prestige_badges[0] ? [entry.player.id, profile.prestige_badges[0]] as const : null;
+        } catch {
+          return null;
+        }
+      }));
+      setBestBadges(Object.fromEntries(badgeEntries.filter((entry): entry is readonly [number, ProfilePrestigeBadge] => entry !== null)));
       setSelectedSeasonId(next.season?.id ?? defaultSeasonId(next.seasons));
     } catch (cause) {
       const apiError = cause instanceof ApiError ? cause : ApiError.networkError('Unable to load season standings.');
@@ -112,7 +122,7 @@ export default function RankingsScreen() {
       {error ? <View style={styles.inlineError}><Text style={styles.inlineErrorText}>Standings may be out of date. Pull to try again.</Text></View> : null}
       {seasons.length && selectedId !== null ? <SeasonPicker onSelect={selectSeason} seasons={seasons} selectedId={selectedId} /> : null}
       {selectedSeason ? <View style={styles.seasonSummary}><Text style={styles.seasonName}>{selectedSeason.name}</Text><Text style={styles.seasonDates}>{formatSeasonDate(selectedSeason.starts_at)} – {formatSeasonDate(selectedSeason.ends_at)}</Text></View> : null}
-      {entries.length ? <View style={styles.leaderboard}>{entries.map((entry) => <LeaderboardRow currentUserId={user?.id ?? null} entry={entry} key={`${entry.player.id}-${entry.place}`} />)}</View> : <EmptyLeaderboard season={selectedSeason} />}
+      {entries.length ? <View style={styles.leaderboard}>{entries.map((entry) => <LeaderboardRow badge={bestBadges[entry.player.id]} currentUserId={user?.id ?? null} entry={entry} key={`${entry.player.id}-${entry.place}`} />)}</View> : <EmptyLeaderboard season={selectedSeason} />}
     </ScrollView>
   </View>;
 }
@@ -137,7 +147,11 @@ const styles = StyleSheet.create({
   avatarImage: { height: '100%', width: '100%' },
   avatarInitial: { color: colors.brandLight, fontSize: 17, fontWeight: '900' },
   playerCopy: { flex: 1, gap: 3, minWidth: 0 },
+  nameLine: { alignItems: 'center', flexDirection: 'row', gap: Spacing.xs, minWidth: 0 },
   playerName: { color: colors.text, fontSize: 16, fontWeight: '800' },
+  badge: { alignItems: 'center', backgroundColor: 'rgba(32, 223, 114, 0.12)', borderColor: 'rgba(32, 223, 114, 0.28)', borderRadius: 10, borderWidth: 1, flexDirection: 'row', gap: 3, maxWidth: 150, paddingHorizontal: 6, paddingVertical: 2 },
+  badgeIcon: { fontSize: 12 },
+  badgeName: { color: colors.brandLight, fontSize: 10, fontWeight: '800' },
   playerMeta: { color: colors.textMuted, fontSize: 12 },
   points: { color: colors.text, flexShrink: 0, fontSize: 17, fontWeight: '900', textAlign: 'right' },
   empty: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.borderSoft, borderRadius: Radii.medium, borderWidth: 1, gap: Spacing.sm, justifyContent: 'center', minHeight: 220, padding: Spacing.xl },
