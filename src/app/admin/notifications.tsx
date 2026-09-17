@@ -1,9 +1,12 @@
-import { useState } from "react";
-import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput } from "react-native";
+import { useRef, useState } from "react";
+import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { useRouter } from "expo-router";
 import { AdminReadList, styles } from "@/components/admin-read-list";
+import { AdminDateField } from "@/components/admin-date-field";
+import { Action, ErrorMessage } from "@/components/auth-ui";
+import { colors, Spacing } from "@/constants/theme";
 import { createStaffNotification, getStaffNotifications } from "@/lib/api";
-import { StaffNotification } from "@/types";
+import { ApiError, StaffNotification } from "@/types";
 export default function StaffNotificationsScreen() {
   const router = useRouter();
   return (
@@ -29,6 +32,7 @@ export default function StaffNotificationsScreen() {
               ? ` · scheduled ${new Date(item.scheduled_for).toLocaleString()}`
               : ""}
           </Text>
+          <Text style={styles.meta}>Route: {item.destination} · Audience: {item.audience}</Text>
           <Text style={styles.meta}>{item.body}</Text>
         </>
       )}
@@ -40,15 +44,26 @@ export function NotificationEditor() {
   const router = useRouter();
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
+  const [destination, setDestination] = useState("/home/");
+  const [scheduledFor, setScheduledFor] = useState("");
+  const [mode, setMode] = useState<"now" | "scheduled">("now");
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<ApiError | null>(null);
+  const scrollRef = useRef<ScrollView>(null);
   const send = async (action: string) => {
+    if (action === "schedule" && !scheduledFor) {
+      setError(ApiError.fromHttpStatus(400, "Choose a date and time to schedule this notification."));
+      return;
+    }
     setSaving(true);
+    setError(null);
     try {
       await createStaffNotification({
         title,
         body,
-        destination: "/home/",
+        destination: destination.trim() || "/home/",
         audience: "approved",
+        ...(action === "schedule" ? { scheduled_for: scheduledFor } : {}),
         ...(action === "send_now" ? { action } : {}),
       });
       Alert.alert(
@@ -57,17 +72,14 @@ export function NotificationEditor() {
       );
       router.back();
     } catch (e) {
-      Alert.alert(
-        "Unable to send notification",
-        e instanceof Error ? e.message : "Please try again.",
-      );
+      setError(e instanceof ApiError ? e : ApiError.networkError("Unable to save this notification."));
     } finally {
       setSaving(false);
     }
   };
   return (
     <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.screen}>
-      <ScrollView contentContainerStyle={{ gap: 14, padding: 24 }} keyboardShouldPersistTaps="handled">
+      <ScrollView ref={scrollRef} contentContainerStyle={{ gap: 14, padding: Spacing.xl, paddingBottom: 48 }} keyboardShouldPersistTaps="handled">
       <Text style={styles.title}>New notification</Text>
       <TextInput
         value={title}
@@ -84,24 +96,29 @@ export function NotificationEditor() {
         multiline
         style={[styles.search, { color: "#fff", minHeight: 110 }]}
       />
-      <Pressable
-        disabled={saving || !title || !body}
-        onPress={() =>
-          Alert.alert("Send now?", "This will notify approved players.", [
-            { text: "Cancel" },
-            { text: "Send now", onPress: () => void send("send_now") },
-          ])
-        }
-      >
-        <Text style={styles.action}>{saving ? "Sending…" : "Send now"}</Text>
-      </Pressable>
-      <Pressable
-        disabled={saving || !title || !body}
-        onPress={() => void send("schedule")}
-      >
-        <Text style={styles.action}>Save notification</Text>
-      </Pressable>
+      <Text style={editorStyles.fieldLabel}>Mobile destination route</Text>
+      <TextInput value={destination} onChangeText={setDestination} autoCapitalize="none" autoCorrect={false} placeholder="/round/123" placeholderTextColor="#9aa7a1" style={[styles.search, { color: "#fff" }]} />
+      <Text style={editorStyles.helper}>Use a QueueUp route such as /, /round/123, /round/123/vote, /profile, or /season/4/recap.</Text>
+      <View style={editorStyles.modeRow}>
+        <Pressable accessibilityRole="radio" accessibilityState={{ selected: mode === "now" }} onPress={() => setMode("now")} style={[editorStyles.modeButton, mode === "now" && editorStyles.modeButtonSelected]}><Text style={editorStyles.modeText}>Send now</Text></Pressable>
+        <Pressable accessibilityRole="radio" accessibilityState={{ selected: mode === "scheduled" }} onPress={() => setMode("scheduled")} style={[editorStyles.modeButton, mode === "scheduled" && editorStyles.modeButtonSelected]}><Text style={editorStyles.modeText}>Schedule</Text></Pressable>
+      </View>
+      {mode === "scheduled" ? <AdminDateField label="Send at" onChangeText={setScheduledFor} onOpen={() => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 80)} value={scheduledFor} /> : null}
+      {error ? <ErrorMessage fieldErrors={error.fieldErrors} message={error.message} /> : null}
+      <Action disabled={saving || !title.trim() || !body.trim() || (mode === "scheduled" && !scheduledFor)} onPress={() => {
+        if (mode === "now") Alert.alert("Send now?", "This will notify approved players.", [{ text: "Cancel" }, { text: "Send now", onPress: () => void send("send_now") }]);
+        else void send("schedule");
+      }}>{saving ? "Saving…" : mode === "now" ? "Send now" : "Schedule notification"}</Action>
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
+
+const editorStyles = {
+  fieldLabel: { color: colors.text, fontSize: 14, fontWeight: "700" as const, marginTop: Spacing.sm },
+  helper: { color: colors.textMuted, fontSize: 13, lineHeight: 18 },
+  modeRow: { flexDirection: "row" as const, gap: Spacing.sm, marginTop: Spacing.sm },
+  modeButton: { backgroundColor: colors.surfaceElevated, borderColor: colors.border, borderRadius: 10, borderWidth: 1, flex: 1, minHeight: 48, justifyContent: "center" as const, paddingHorizontal: Spacing.md },
+  modeButtonSelected: { backgroundColor: colors.brand, borderColor: colors.brand },
+  modeText: { color: colors.text, fontSize: 15, fontWeight: "800" as const, textAlign: "center" as const },
+};
