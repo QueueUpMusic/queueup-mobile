@@ -32,13 +32,14 @@ function Avatar({ player }: { player: UserSummary }) {
 function LeaderboardRow({ entry, currentUserId, badge }: { entry: LeaderboardEntry; currentUserId: number | null; badge?: ProfilePrestigeBadge }) {
   const isCurrentUser = entry.player.id === currentUserId;
   const place = `${entry.tied ? 'T-' : ''}#${entry.place}`;
-  const metadata = `${formatRounds(entry.rounds_played)} · ${entry.submission_bonus} submission ${entry.submission_bonus === 1 ? 'point' : 'points'}`;
+  const metadata = formatRounds(entry.rounds_played);
+  const showBadge = Boolean(badge) && entry.player.username.length <= 18;
 
   return <View style={[styles.rankRow, isCurrentUser && styles.currentUserRow]}>
     <Text style={[styles.rankPlace, entry.place <= 3 && styles.topRankPlace]}>{place}</Text>
     <Avatar player={entry.player} />
     <View style={styles.playerCopy}>
-      <View style={styles.nameLine}><ProfileLink displayName={entry.player.display_name} style={entry.player.display_name.length > 18 ? styles.longPlayerName : styles.playerName} username={entry.player.username} />{badge ? <View accessibilityLabel={`${badge.name} badge`} style={styles.badge}><Text style={styles.badgeIcon}>{badge.icon}</Text></View> : null}</View>
+      <View style={styles.nameLine}><ProfileLink displayName={entry.player.display_name} style={entry.player.display_name.length > 18 ? styles.longPlayerName : styles.playerName} username={entry.player.username} />{showBadge && badge ? <View accessibilityLabel={`${badge.name} badge`} style={styles.badge}><Text style={styles.badgeIcon}>{badge.icon}</Text></View> : null}</View>
       <Text numberOfLines={1} style={styles.playerMeta}>{metadata}</Text>
     </View>
     <Text numberOfLines={1} style={styles.points}>{entry.total_score.toLocaleString()} pts</Text>
