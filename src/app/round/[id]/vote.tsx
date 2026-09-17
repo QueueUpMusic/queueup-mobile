@@ -278,9 +278,14 @@ export default function VoteScreen() {
   const isVoting = detail?.round.state === "voting" && !closed;
   const firstPass = mode === "FIRST_PASS";
   const displayProgress = useMemo(
-    () => `${progress.voted} of ${progress.total} rated`,
-    [progress],
+    () => firstPass
+      ? `${progress.voted} of ${progress.total} rated`
+      : `Song ${index + 1} of ${tracks.length}`,
+    [firstPass, index, progress, tracks.length],
   );
+  const progressPercent = firstPass
+    ? (progress.total ? (progress.voted / progress.total) * 100 : 0)
+    : (tracks.length ? ((index + 1) / tracks.length) * 100 : 0);
 
   const refreshVotingState = useCallback(async () => {
     try {
@@ -446,16 +451,14 @@ export default function VoteScreen() {
         </View>
         <View style={styles.progressRow}>
           <Text style={styles.progress}>{displayProgress}</Text>
-          <Text style={styles.songNumber}>
-            Song {index + 1} of {tracks.length}
-          </Text>
+          {firstPass ? <Text style={styles.songNumber}>Song {index + 1} of {tracks.length}</Text> : null}
         </View>
         <View style={styles.progressTrack}>
           <View
             style={[
               styles.progressFill,
               {
-                width: `${progress.total ? (progress.voted / progress.total) * 100 : 0}%`,
+                width: `${progressPercent}%`,
               },
             ]}
           />
