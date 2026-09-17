@@ -14,7 +14,7 @@ export default function AboutScreen() {
 
   return <SafeAreaView edges={['top', 'bottom']} style={styles.screen}>
     <View style={styles.header}><Pressable accessibilityLabel="Go back to settings" accessibilityRole="button" onPress={() => router.back()} style={styles.back}><ChevronLeft color={colors.brand} size={24} /><Text style={styles.backLabel}>Settings</Text></Pressable><Text style={styles.headerTitle}>About</Text><View style={styles.spacer} /></View>
-    <View style={styles.content}><Image accessibilityLabel="QueueUp logo" contentFit="contain" source={logo} style={styles.logo} /><Text style={styles.title}>About this app</Text><Text style={styles.brand}>QueueUp</Text><Text style={styles.copyright}>Copyright QueueUp Music 2026</Text><Text style={styles.version}>Version {version}</Text></View>
+    <View style={styles.content}><Image accessibilityLabel="QueueUp logo" contentFit="contain" source={logo} style={styles.logo} /><Text style={styles.title}>About this app</Text><Text style={styles.brand}>QueueUp</Text><Text style={styles.copyright}>© QueueUp Music 2026</Text><Text style={styles.version}>Version {version}</Text></View>
   </SafeAreaView>;
 }
 
