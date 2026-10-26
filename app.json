@@ -22,13 +22,7 @@
         "foregroundImage": "./assets/images/queueup-icon.png",
         "monochromeImage": "./assets/images/queueup-icon.png"
       },
-      "predictiveBackGestureEnabled": false,
-      "permissions": [
-        "android.permission.RECORD_AUDIO",
-        "android.permission.MODIFY_AUDIO_SETTINGS",
-        "android.permission.FOREGROUND_SERVICE",
-        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
-      ]
+      "predictiveBackGestureEnabled": false
     },
     "web": {
       "output": "static",
@@ -52,7 +46,6 @@
           "photosPermission": "QueueUp uses your photos for your profile picture."
         }
       ],
-      "expo-audio",
       "expo-notifications",
       "expo-sharing",
       "@react-native-community/datetimepicker",
