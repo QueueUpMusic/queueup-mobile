@@ -10,7 +10,7 @@ const logo = require('../../assets/images/queueup-logo-transparent.png');
 
 export default function AboutScreen() {
   const router = useRouter();
-  const version = Constants.expoConfig?.version ?? '1.0.0';
+  const version = Constants.expoConfig?.version ?? '1.0.1';
 
   return <SafeAreaView edges={['top', 'bottom']} style={styles.screen}>
     <View style={styles.header}><Pressable accessibilityLabel="Go back to settings" accessibilityRole="button" onPress={() => router.back()} style={styles.back}><ChevronLeft color={colors.brand} size={24} /><Text style={styles.backLabel}>Settings</Text></Pressable><Text style={styles.headerTitle}>About</Text><View style={styles.spacer} /></View>
