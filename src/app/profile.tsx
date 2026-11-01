@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Linking, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import Svg, { Path } from 'react-native-svg';
 import { Action, ErrorMessage } from '@/components/auth-ui';
@@ -124,6 +124,11 @@ export function ProfileScreen() {
         </Pressable>
         <Pressable accessibilityHint="Opens account and app settings" accessibilityRole="button" onPress={() => router.push('/settings')} style={({ pressed }) => [styles.settingsRow, pressed && styles.pressed]}>
           <View><Text style={styles.settingsTitle}>Settings</Text><Text style={styles.settingsCopy}>Account and app preferences</Text></View><ArrowRight color={colors.brandLight} size={20} />
+        </Pressable>
+        <Pressable accessibilityHint="Opens the prompt idea form in your default browser" accessibilityRole="button" onPress={() => {
+          void Linking.openURL('https://forms.gle/VSDRcdCi92Z5mcr56').catch(() => Alert.alert('Unable to open form', 'Please try again in a moment.'));
+        }} style={({ pressed }) => [styles.settingsRow, pressed && styles.pressed]}>
+          <View style={styles.menuCopy}><Text style={styles.settingsTitle}>Submit a Prompt Idea</Text><Text style={styles.settingsCopy}>Have an idea for the next QueueUp Prompt?</Text></View><ArrowRight color={colors.brandLight} size={20} />
         </Pressable>
       </View> : null}
 
