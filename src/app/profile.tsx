@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import Svg, { Path } from 'react-native-svg';
 import { Action, ErrorMessage } from '@/components/auth-ui';
 import { PlayerAvatar } from '@/components/player-avatar';
 import { CachedImage } from '@/components/cached-image';
@@ -15,8 +16,24 @@ import { resolveServerUrl } from '@/config/server';
 
 function formatAverage(value: number): string { return value.toFixed(2); }
 
-function ProfileMetric({ label, value }: { label: string; value: string | number }) {
-  return <View style={styles.metric}><Text style={styles.metricValue}>{value}</Text><Text style={styles.metricLabel}>{label}</Text></View>;
+const metricIcons = {
+  wins: 'M8 3h8v6a4 4 0 0 1-8 0V3Zm0 2H4v2a4 4 0 0 0 4 4m8-6h4v2a4 4 0 0 1-4 4m-4 2v5m-4 3h8m-6-3h4',
+  podiums: 'M8 21V8h8v13M3 21V13h5m8-2h5v10M2 21h20M12 3v2',
+  score: 'm12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9L12 3Z',
+  rate: 'm4 17 6-6 4 4 6-10m-6 0h6v6',
+  place: 'M4 4h16v16H4V4Zm4 5h8m-8 6h5m-5-3h8',
+  rounds: 'M9 18V5l11-2v13M9 18c0 1.7-1.6 3-3.5 3S2 19.7 2 18s1.6-3 3.5-3S9 16.3 9 18Zm11-2c0 1.7-1.6 3-3.5 3S13 17.7 13 16s1.6-3 3.5-3 3.5 1.3 3.5 3Z',
+} as const;
+
+function ProfileMetric({ label, value, icon, gold = false }: { label: string; value: string | number; icon: keyof typeof metricIcons; gold?: boolean }) {
+  const accent = gold ? colors.warning : colors.brandLight;
+  return <View style={[styles.metric, gold && styles.goldMetric]}>
+    <View accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={[styles.metricIcon, gold && styles.goldMetricIcon]}>
+      <Svg fill="none" height={18} viewBox="0 0 24 24" width={18}><Path d={metricIcons[icon]} stroke={accent} strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.7} /></Svg>
+    </View>
+    <Text style={[styles.metricValue, { color: accent }]}>{value}</Text>
+    <Text style={styles.metricLabel}>{label}</Text>
+  </View>;
 }
 
 function BadgeIcon({ badge, onPress }: { badge: ProfileBadge; onPress: () => void }) {
@@ -110,13 +127,16 @@ export function ProfileScreen() {
         </Pressable>
       </View> : null}
 
-      <View style={styles.metricGrid}>
-        <ProfileMetric label="Wins" value={metrics.wins} />
-        <ProfileMetric label="Podiums" value={metrics.podiums} />
-        <ProfileMetric label="Avg score" value={formatAverage(metrics.average_received)} />
-        <ProfileMetric label="Win rate" value={`${metrics.win_rate.toFixed(0)}%`} />
-        <ProfileMetric label="Avg place" value={metrics.average_placement ? metrics.average_placement.toFixed(1) : '—'} />
-        <ProfileMetric label="Rounds" value={metrics.round_count} />
+      <View>
+        <Text style={styles.sectionTitle}>Player stats</Text>
+        <View style={styles.metricGrid}>
+          <ProfileMetric gold icon="wins" label="Wins" value={metrics.wins} />
+          <ProfileMetric gold icon="podiums" label="Podiums" value={metrics.podiums} />
+          <ProfileMetric icon="score" label="Avg score" value={formatAverage(metrics.average_received)} />
+          <ProfileMetric icon="rate" label="Win rate" value={`${metrics.win_rate.toFixed(0)}%`} />
+          <ProfileMetric icon="place" label="Avg place" value={metrics.average_placement ? metrics.average_placement.toFixed(1) : '—'} />
+          <ProfileMetric icon="rounds" label="Rounds" value={metrics.round_count} />
+        </View>
       </View>
 
       <View style={styles.badgeSection}>
@@ -164,9 +184,12 @@ const styles = StyleSheet.create({
   displayName: { color: colors.text, fontSize: 34, fontWeight: '900', letterSpacing: -1, marginTop: Spacing.sm, textAlign: 'center' },
   username: { color: colors.textMuted, fontSize: 16 },
   metricGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
-  metric: { backgroundColor: colors.surfaceElevated, borderColor: colors.borderSoft, borderRadius: Radii.medium, borderWidth: 1, flexBasis: '31%', flexGrow: 1, minHeight: 92, minWidth: 100, padding: Spacing.md },
-  metricValue: { color: colors.text, fontSize: 25, fontWeight: '900' },
-  metricLabel: { color: colors.textMuted, fontSize: 12, marginTop: Spacing.xs },
+  metric: { backgroundColor: colors.surfaceElevated, borderColor: 'rgba(139, 242, 178, 0.12)', borderRadius: Radii.medium, borderWidth: 1, flexBasis: '31%', flexGrow: 1, minHeight: 128, minWidth: 100, padding: Spacing.md },
+  goldMetric: { backgroundColor: '#1e2118', borderColor: 'rgba(245, 196, 92, 0.18)' },
+  metricIcon: { alignItems: 'center', alignSelf: 'flex-start', backgroundColor: 'rgba(32, 223, 114, 0.08)', borderRadius: 10, height: 30, justifyContent: 'center', marginBottom: Spacing.sm, width: 30 },
+  goldMetricIcon: { backgroundColor: 'rgba(245, 196, 92, 0.1)' },
+  metricValue: { fontSize: 30, fontVariant: ['tabular-nums'], fontWeight: '900', letterSpacing: -0.8 },
+  metricLabel: { color: colors.textMuted, fontSize: 12, fontWeight: '600', marginTop: 3 },
   settingsRow: { alignItems: 'center', backgroundColor: colors.surfaceElevated, borderColor: colors.border, borderRadius: Radii.medium, borderWidth: 1, flexDirection: 'row', justifyContent: 'space-between', minHeight: 72, paddingHorizontal: Spacing.lg },
   profileMenu: { gap: Spacing.sm },
   settingsTitle: { color: colors.text, fontSize: 16, fontWeight: '800' },
