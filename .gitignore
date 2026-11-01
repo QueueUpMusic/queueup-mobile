@@ -43,3 +43,6 @@ example
 /ios
 /android
 CODEX_REMOTE_HOST.md
+
+# Basalt generated files (compile-time source mapping)
+.basalt/

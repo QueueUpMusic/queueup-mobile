@@ -80,6 +80,7 @@ function AuthStack() {
       </Stack.Protected>
       <Stack.Screen name="profile" options={{ animation: 'slide_from_right' }} />
       <Stack.Screen name="profile/[username]" options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen name="profile/[username]/history" options={{ animation: 'slide_from_right' }} />
       <Stack.Screen name="profile/edit" options={{ animation: 'slide_from_right' }} />
       <Stack.Screen name="settings" />
     </Stack.Protected>

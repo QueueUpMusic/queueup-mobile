@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import { ActivityIndicator, Image, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Action, ErrorMessage } from '@/components/auth-ui';
 import { PlayerAvatar } from '@/components/player-avatar';
@@ -19,20 +19,14 @@ function ProfileMetric({ label, value }: { label: string; value: string | number
   return <View style={styles.metric}><Text style={styles.metricValue}>{value}</Text><Text style={styles.metricLabel}>{label}</Text></View>;
 }
 
-function BadgeCard({ badge }: { badge: ProfileBadge }) {
-  return <View style={[styles.badge, !badge.earned && styles.lockedBadge]}>
-    <Text style={styles.badgeIcon}>{badge.icon}</Text>
-    <Text numberOfLines={2} style={styles.badgeName}>{badge.name}</Text>
-    <Text numberOfLines={3} style={styles.badgeDescription}>{badge.description}</Text>
-  </View>;
-}
-
-function HistoryRow({ title, artist, score, artwork }: { title: string; artist: string; score: number; artwork: string | null }) {
-  return <View style={styles.historyRow}>
-    {artwork ? <Image accessibilityLabel={`${title} artwork`} source={{ uri: artwork }} style={styles.historyArtwork} /> : <View style={[styles.historyArtwork, styles.artworkFallback]}><Text style={styles.fallbackMusic}>♫</Text></View>}
-    <View style={styles.historyCopy}><Text numberOfLines={1} style={styles.historyTitle}>{title}</Text><Text numberOfLines={1} style={styles.historyArtist}>{artist}</Text></View>
-    <Text style={styles.historyScore}>{score.toFixed(2)} ★</Text>
-  </View>;
+function BadgeIcon({ badge, onPress }: { badge: ProfileBadge; onPress: () => void }) {
+  return <Pressable
+    accessibilityLabel={`${badge.name}, ${badge.earned ? 'earned' : 'not earned'}`}
+    accessibilityHint="Shows the badge title and description"
+    accessibilityRole="button"
+    onPress={onPress}
+    style={({ pressed }) => [styles.badge, badge.earned && styles.earnedBadge, pressed && styles.pressed]}
+  ><Text style={[styles.badgeIcon, !badge.earned && styles.lockedIcon]}>{badge.icon}</Text></Pressable>;
 }
 
 function AnalyticsList({ title, values }: { title: string; values: [string, number][] }) {
@@ -55,6 +49,7 @@ export function ProfileScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<ApiError | null>(null);
   const [avatarExpanded, setAvatarExpanded] = useState(false);
+  const [selectedBadge, setSelectedBadge] = useState<ProfileBadge | null>(null);
   const requestInFlight = useRef(false);
 
   const load = useCallback(async (pull = false, background = false) => {
@@ -124,12 +119,32 @@ export function ProfileScreen() {
         <ProfileMetric label="Rounds" value={metrics.round_count} />
       </View>
 
-      <View><Text style={styles.sectionTitle}>Badges</Text>{profile.badges.length ? <View style={styles.badgeGrid}>{profile.badges.map((badge) => <BadgeCard badge={badge} key={badge.key} />)}</View> : <Text style={styles.emptyCopy}>Achievements will appear here as you play.</Text>}</View>
+      <View style={styles.badgeSection}>
+        <View style={styles.sectionHeading}><Text style={styles.badgeSectionTitle}>Badges</Text><Text style={styles.badgeCount}>{profile.badges.filter((badge) => badge.earned).length} / {profile.badges.length} earned</Text></View>
+        <Text style={styles.badgeHint}>Tap an icon to explore an achievement.</Text>
+        {profile.badges.length ? <View style={styles.badgeGrid}>{profile.badges.map((badge) => <BadgeIcon badge={badge} key={badge.key} onPress={() => setSelectedBadge(badge)} />)}</View> : <Text style={styles.emptyCopy}>Achievements will appear here as you play.</Text>}
+      </View>
 
-      <View><Text style={styles.sectionTitle}>Submission history</Text>{profile.history.length ? <View style={styles.historyList}>{profile.history.map((submission) => <HistoryRow artist={submission.artist} artwork={submission.album_art_url} key={submission.id} score={submission.average_score} title={submission.title} />)}</View> : <Text style={styles.emptyCopy}>No revealed submissions yet.</Text>}</View>
+      <Pressable accessibilityHint="Browse and search revealed submissions" accessibilityRole="button" onPress={() => router.push({ pathname: '/profile/[username]/history', params: { username: player.username } })} style={({ pressed }) => [styles.settingsRow, pressed && styles.pressed]}>
+        <View style={styles.menuCopy}><Text style={styles.settingsTitle}>Submission history</Text><Text style={styles.settingsCopy}>Browse and search {profile.history.length} revealed {profile.history.length === 1 ? 'song' : 'songs'}</Text></View><ArrowRight color={colors.brandLight} size={20} />
+      </Pressable>
 
       <View style={styles.analyticsGrid}><AnalyticsList title="Favorite genres" values={profile.favorite_genres} /><AnalyticsList title="Most submitted artists" values={profile.most_submitted_artists} /></View>
     </ScrollView>
+    <Modal animationType="fade" onRequestClose={() => setSelectedBadge(null)} transparent visible={selectedBadge !== null}>
+      <View style={styles.badgeModalBackdrop}>
+        <Pressable accessibilityLabel="Close badge details" accessibilityRole="button" onPress={() => setSelectedBadge(null)} style={StyleSheet.absoluteFill} />
+        {selectedBadge ? <View accessibilityViewIsModal style={styles.badgeModalCard}>
+          <ScrollView contentContainerStyle={styles.badgeModalContent}>
+            <View style={[styles.badge, selectedBadge.earned && styles.earnedBadge]}><Text style={[styles.badgeIcon, !selectedBadge.earned && styles.lockedIcon]}>{selectedBadge.icon}</Text></View>
+            <Text style={[styles.badgeStatus, selectedBadge.earned && styles.earnedStatus]}>{selectedBadge.earned ? 'Earned' : 'Not earned yet'}</Text>
+            <Text accessibilityRole="header" style={styles.badgeName}>{selectedBadge.name}</Text>
+            <Text style={styles.badgeDescription}>{selectedBadge.description}</Text>
+            <Action secondary onPress={() => setSelectedBadge(null)}>Close</Action>
+          </ScrollView>
+        </View> : null}
+      </View>
+    </Modal>
   </View>;
 }
 
@@ -157,21 +172,24 @@ const styles = StyleSheet.create({
   settingsTitle: { color: colors.text, fontSize: 16, fontWeight: '800' },
   settingsCopy: { color: colors.textMuted, fontSize: 13, marginTop: 3 },
   sectionTitle: { color: colors.text, fontSize: 21, fontWeight: '800', marginBottom: Spacing.md },
-  badgeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
-  badge: { backgroundColor: colors.surfaceElevated, borderColor: colors.borderSoft, borderRadius: Radii.medium, borderWidth: 1, flexBasis: '31%', flexGrow: 1, minHeight: 145, minWidth: 100, padding: Spacing.md },
-  lockedBadge: { opacity: 0.48 },
-  badgeIcon: { fontSize: 27, marginBottom: Spacing.xs },
-  badgeName: { color: colors.text, fontSize: 14, fontWeight: '800' },
-  badgeDescription: { color: colors.textMuted, fontSize: 12, lineHeight: 17, marginTop: Spacing.xs },
-  historyList: { backgroundColor: colors.surface, borderColor: colors.borderSoft, borderRadius: Radii.medium, borderWidth: 1, overflow: 'hidden' },
-  historyRow: { alignItems: 'center', borderBottomColor: colors.borderSoft, borderBottomWidth: StyleSheet.hairlineWidth, flexDirection: 'row', gap: Spacing.md, minHeight: 76, padding: Spacing.md },
-  historyArtwork: { backgroundColor: colors.surfaceHighest, borderRadius: Radii.small, height: 52, width: 52 },
-  artworkFallback: { alignItems: 'center', justifyContent: 'center' },
-  fallbackMusic: { color: colors.brand, fontSize: 24 },
-  historyCopy: { flex: 1, gap: 3, minWidth: 0 },
-  historyTitle: { color: colors.text, fontSize: 15, fontWeight: '800' },
-  historyArtist: { color: colors.textMuted, fontSize: 13 },
-  historyScore: { color: colors.brandLight, fontSize: 14, fontWeight: '800' },
+  menuCopy: { flex: 1, paddingVertical: Spacing.md, paddingRight: Spacing.sm },
+  badgeSection: { backgroundColor: colors.surface, borderColor: colors.borderSoft, borderRadius: Radii.medium, borderWidth: 1, padding: Spacing.lg },
+  sectionHeading: { alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, justifyContent: 'space-between' },
+  badgeSectionTitle: { color: colors.text, fontSize: 21, fontWeight: '800' },
+  badgeCount: { color: colors.brandLight, fontSize: 13, fontWeight: '700' },
+  badgeHint: { color: colors.textMuted, fontSize: 13, lineHeight: 19, marginBottom: Spacing.lg, marginTop: Spacing.xs },
+  badgeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md, justifyContent: 'center' },
+  badge: { alignItems: 'center', backgroundColor: colors.surfaceElevated, borderColor: colors.border, borderRadius: 32, borderWidth: 1, height: 64, justifyContent: 'center', width: 64 },
+  earnedBadge: { backgroundColor: 'rgba(32, 223, 114, 0.14)', borderColor: colors.brand, boxShadow: '0 0 12px rgba(32, 223, 114, 0.16)' },
+  lockedIcon: { opacity: 0.25 },
+  badgeIcon: { fontSize: 30, height: 44, includeFontPadding: false, lineHeight: 44, textAlign: 'center', textAlignVertical: 'center', width: 44 },
+  badgeModalBackdrop: { alignItems: 'center', backgroundColor: 'rgba(0, 0, 0, 0.78)', flex: 1, justifyContent: 'center', padding: Spacing.xl },
+  badgeModalCard: { backgroundColor: colors.surfaceElevated, borderColor: colors.border, borderRadius: Radii.large, borderWidth: 1, maxHeight: '85%', maxWidth: 400, width: '100%' },
+  badgeModalContent: { alignItems: 'center', gap: Spacing.md, padding: Spacing.xl },
+  badgeStatus: { color: colors.textMuted, fontSize: 13, fontWeight: '700' },
+  earnedStatus: { color: colors.brandLight },
+  badgeName: { color: colors.text, fontSize: 24, fontWeight: '800', textAlign: 'center' },
+  badgeDescription: { color: colors.textMuted, fontSize: 16, lineHeight: 24, textAlign: 'center' },
   analyticsGrid: { gap: Spacing.md },
   analyticsCard: { backgroundColor: colors.surfaceElevated, borderColor: colors.borderSoft, borderRadius: Radii.medium, borderWidth: 1, padding: Spacing.lg },
   analyticsRow: { alignItems: 'center', borderTopColor: colors.borderSoft, borderTopWidth: StyleSheet.hairlineWidth, flexDirection: 'row', justifyContent: 'space-between', paddingVertical: Spacing.sm },
