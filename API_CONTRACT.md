@@ -113,7 +113,7 @@ Additional error fields may be included (e.g., `errors` for form validation).
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|
 | GET | `/api/v1/auth/csrf/` | Anonymous | Issue a CSRF token and cookie |
-| POST | `/api/v1/auth/login/` | Anonymous | Authenticate with a username and password |
+| POST | `/api/v1/auth/login/` | Anonymous | Authenticate with a username or email and password |
 | POST | `/api/v1/auth/signup/` | Anonymous | Create an account and establish a session |
 | POST | `/api/v1/auth/logout/` | Authenticated (pending ok) | End the current session |
 
@@ -121,8 +121,22 @@ Authentication uses Django sessions; these endpoints do not issue JWTs or API
 tokens. All POST requests require the CSRF token from the `csrftoken` cookie
 (the configured cookie name may differ) in the `X-CSRFToken` header.
 
-`/api/v1/auth/login/` accepts `{ "username": "...", "password": "..." }`.
-Successful login returns the same session data shape documented below.
+`/api/v1/auth/login/` accepts the preferred request shape:
+
+```json
+{
+  "identifier": "username-or-email",
+  "password": "..."
+}
+```
+
+The legacy `{ "username": "...", "password": "..." }` shape remains
+supported for compatibility. `identifier` may be either a username or an
+email address. Username matching preserves existing behavior; email matching
+is case-insensitive and succeeds only when exactly one account has that email.
+An unknown username, unknown email, wrong password, or ambiguous duplicate
+email returns the same generic invalid-login validation response. Successful
+login returns the same session data shape documented below.
 
 `/api/v1/auth/signup/` accepts:
 
@@ -206,6 +220,39 @@ All require `@api_user_required` (authenticated + approved).
 | GET | `/api/v1/leaderboard/` | Season leaderboard |
 | GET | `/api/v1/profiles/<username>/` | User profile |
 | GET | `/api/v1/profiles/<username>/achievements/` | User achievements |
+
+### Player profile response
+
+`GET /api/v1/profiles/<username>/` returns a player's revealed, eligible
+history. `most_submitted_artists` keeps the existing array shape:
+
+```json
+"most_submitted_artists": [
+  ["Dreamy Tapes", 2],
+  ["Palm Boy", 1]
+]
+```
+
+Each inner array is `[artist_name, submission_count]`. The count is grouped by
+the Spotify artist identity from the submission's structured credits and an
+artist contributes at most once per submission, including collaborations. The
+list is aggregated across all eligible revealed submissions first and then
+limited to the top eight entries. Ordering is descending count with the
+underlying stable Spotify identity used for deterministic ties.
+
+The mobile client must consume `data.most_submitted_artists` directly and must
+not split `data.history[*].artist` on commas, ampersands, “and”, or any other
+display punctuation. `history[*].artist` remains a display string only; it is
+not an artist-boundary contract. The profile endpoint preserves its existing
+approval/privacy, reveal, and `?season=<id>` filtering behavior.
+
+New submissions store ordered Spotify credits as `{id, name}` records. Legacy
+submissions created before this field was populated are excluded from this
+leaderboard until `python manage.py backfill_artist_credits` resolves their
+Spotify track metadata. The command is safe to rerun, throttled by its
+`--sleep` option, and reports tracks that cannot be resolved; it never guesses
+boundaries from the legacy display string. See the deployment notes for the
+backfill command.
 
 ### Season recap
 
@@ -339,10 +386,38 @@ dashboard cards or anonymous/authentication behavior.
 | POST | `/api/v1/onboarding/season-welcome/` | Required | Acknowledge season welcome |
 | POST | `/api/v1/onboarding/voting-guide/` | Required | Acknowledge voting guide |
 | POST | `/api/v1/onboarding/submission-rules/` | Required | Accept submission rules |
+| POST | `/api/v1/onboarding/native-push-prompt/` | Required | Record the native notification opt-in prompt choice |
 | POST | `/api/v1/profile/` | Required | Update the authenticated user's display name and/or email |
 | POST,DELETE | `/api/v1/profile/picture/` | Required | Set/remove profile picture |
 | GET | `/api/v1/notifications/` | Required | Get notification preferences |
 | POST,DELETE | `/api/v1/push/subscriptions/` | Required | Manage push subscriptions |
+| POST | `/api/v1/mobile/push/register/` | Required | Register or refresh an Expo native device token |
+| POST | `/api/v1/mobile/push/unregister/` | Required | Unregister the authenticated native device token |
+| POST | `/api/v1/mobile/push/disable/` | Required | Disable QueueUp native notifications for this user and device |
+| POST | `/api/v1/mobile/push/status/` | Required | Check whether this native device token is active for the authenticated user |
+
+Native registration accepts JSON with required `expo_push_token`,
+`installation_id` (a stable app-install identifier), and `platform` (`ios` or
+`android`), plus optional `device_id` and `app_version`. The installation is
+the device identity: registration is idempotent, token rollover updates the
+same installation, and an installation can be safely reassigned when another
+authenticated user logs in. Registration enables the account preference only
+after the backend registration succeeds. Native delivery uses a separate
+`NativePushDevice`/`NativeNotificationDelivery` transport and does not affect
+browser PushSubscription delivery.
+
+Native devices have an explicit registration boundary. Events whose actionable
+time predates `registered_at` are not backfilled to a newly enabled device;
+registration itself never runs notification generation. `disable` turns off
+the QueueUp preference and this installation, while `unregister` disables only
+the current installation and preserves the account preference. Status reports
+whether the supplied token is active for the authenticated user.
+
+The onboarding response also includes `native_push_prompt_seen`, an
+account-level acknowledgement independent of the submission and voting guides.
+Clients should show the native notification invitation only when this value is
+false. `POST /api/v1/onboarding/native-push-prompt/` records either an opt-in
+or a Not now choice; it does not grant OS permission or register a device.
 
 **`/api/v1/profile/` Request:**
 
