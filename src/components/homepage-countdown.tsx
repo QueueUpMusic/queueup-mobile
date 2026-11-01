@@ -1,11 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
-import { AppState, AppStateStatus, StyleSheet, Text, View } from 'react-native';
-import { useIsFocused } from 'expo-router';
+import { StyleSheet, Text, View } from 'react-native';
 import { colors, Radii, Spacing } from '@/constants/theme';
 import { HomepageCountdown } from '@/types';
 
 function formatRemaining(targetAt: string, now: number) {
-  const totalSeconds = Math.max(0, Math.floor((new Date(targetAt).getTime() - now) / 1000));
+  const totalSeconds = Math.max(0, Math.ceil((new Date(targetAt).getTime() - now) / 1000));
   const days = Math.floor(totalSeconds / 86400);
   const hours = Math.floor((totalSeconds % 86400) / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
@@ -30,33 +28,7 @@ function CountdownCard({ countdown, now }: { countdown: HomepageCountdown; now: 
   </View>;
 }
 
-export function HomepageCountdowns({ countdowns, onReachedZero }: { countdowns: HomepageCountdown[]; onReachedZero: () => void }) {
-  const focused = useIsFocused();
-  const [appState, setAppState] = useState<AppStateStatus>(AppState.currentState);
-  const [now, setNow] = useState(() => Date.now());
-  const notifiedIds = useRef(new Set<number>());
-  const active = focused && appState === 'active';
-
-  useEffect(() => {
-    const subscription = AppState.addEventListener('change', setAppState);
-    return () => subscription.remove();
-  }, []);
-
-  useEffect(() => {
-    if (!active) return undefined;
-    const timer = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(timer);
-  }, [active]);
-
-  useEffect(() => {
-    const reachedZero = countdowns.some((countdown) => countdown.state === 'counting_down' && new Date(countdown.target_at).getTime() <= now && !notifiedIds.current.has(countdown.id));
-    if (!reachedZero) return;
-    countdowns.forEach((countdown) => {
-      if (countdown.state === 'counting_down' && new Date(countdown.target_at).getTime() <= now) notifiedIds.current.add(countdown.id);
-    });
-    onReachedZero();
-  }, [countdowns, now, onReachedZero]);
-
+export function HomepageCountdowns({ countdowns, now }: { countdowns: HomepageCountdown[]; now: number }) {
   if (!countdowns.length) return null;
   return <View style={styles.stack}>{countdowns.map((countdown) => <CountdownCard key={countdown.id} countdown={countdown} now={now} />)}</View>;
 }

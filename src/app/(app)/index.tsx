@@ -12,6 +12,7 @@ import { useAuth } from '@/context/auth';
 import { getArchive, getDashboard, getRoundDetail } from '@/lib/api';
 import { ApiError, DashboardResponse, RoundSummary, SeasonSummary, SubmissionTrack } from '@/types';
 import { useLiveRefresh } from '@/hooks/use-live-refresh';
+import { useCountdownRefresh } from '@/hooks/use-countdown-refresh';
 
 function formatDate(value: string | null) {
   if (!value) return 'Not set';
@@ -21,7 +22,7 @@ function formatDate(value: string | null) {
 
 function formatCountdown(target: string | null, now: number) {
   if (!target) return '—';
-  const seconds = Math.floor(Math.max(0, new Date(target).getTime() - now) / 1000);
+  const seconds = Math.ceil(Math.max(0, new Date(target).getTime() - now) / 1000);
   const days = Math.floor(seconds / 86400);
   const hours = Math.floor((seconds % 86400) / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
@@ -39,18 +40,16 @@ function primaryLabel(round: RoundSummary, isResults: boolean, ballotComplete: b
   return null;
 }
 
-function CountdownPanel({ round, isResults }: { round: RoundSummary; isResults: boolean }) {
-  const target = isResults ? null : round.state === 'upcoming' ? round.submission_opens : round.state === 'submitting' ? round.submission_deadline : round.state === 'voting' ? round.voting_deadline : round.state === 'locked' ? round.reveal_at : null;
-  const [now, setNow] = useState(() => Date.now());
+function roundCountdownTarget(round: RoundSummary | null | undefined) {
+  if (!round) return null;
+  return round.state === 'upcoming' ? round.submission_opens : round.state === 'submitting' ? round.submission_deadline : round.state === 'voting' ? round.voting_deadline : round.state === 'locked' ? round.reveal_at : null;
+}
 
-  useEffect(() => {
-    if (!target) return;
-    const timer = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(timer);
-  }, [target]);
-
+function CountdownPanel({ round, isResults, now }: { round: RoundSummary; isResults: boolean; now: number }) {
+  const target = isResults ? null : roundCountdownTarget(round);
+  const expired = target !== null && Date.parse(target) <= now;
   const label = isResults ? 'Round revealed' : round.state === 'upcoming' ? 'Submissions open in' : round.state === 'submitting' ? 'Submissions close in' : round.state === 'voting' ? 'Voting closes in' : round.state === 'locked' ? 'Reveal begins in' : 'Revealed';
-  return <View style={styles.countdownPanel}><Text numberOfLines={2} style={styles.countdownLabel}>{label}</Text><Text numberOfLines={isResults ? 2 : 1} style={[styles.countdownValue, isResults && styles.revealedDate]}>{isResults ? formatDate(round.reveal_at) : formatCountdown(target, now)}</Text></View>;
+  return <View style={styles.countdownPanel}><Text numberOfLines={2} style={styles.countdownLabel}>{label}</Text><Text numberOfLines={isResults ? 2 : 1} style={[styles.countdownValue, isResults && styles.revealedDate]}>{isResults ? formatDate(round.reveal_at) : expired ? 'Updating…' : formatCountdown(target, now)}</Text></View>;
 }
 
 function SubmissionStatus({ submission }: { submission: SubmissionTrack }) {
@@ -70,7 +69,7 @@ function HostCard({ host }: { host: NonNullable<RoundSummary['host']> }) {
   </View>;
 }
 
-function RoundCard({ round, submission, isResults = false, ballotComplete = false }: { round: RoundSummary; submission: DashboardResponse['my_submission']; isResults?: boolean; ballotComplete?: boolean }) {
+function RoundCard({ round, submission, isResults = false, ballotComplete = false, now }: { round: RoundSummary; submission: DashboardResponse['my_submission']; isResults?: boolean; ballotComplete?: boolean; now: number }) {
   const router = useRouter();
   const primary = submission && round.state === 'submitting'
     ? null
@@ -88,7 +87,7 @@ function RoundCard({ round, submission, isResults = false, ballotComplete = fals
       {round.details ? <Text style={styles.body}>{round.details}</Text> : null}
     </View>
 
-    <CountdownPanel isResults={isResults} round={round} />
+    <CountdownPanel isResults={isResults} now={now} round={round} />
 
     <View style={styles.statsRow}>
       <View style={styles.metric}><Text style={styles.metricValue}>{round.submission_count}</Text><Text style={styles.metricLabel}>Songs</Text></View>
@@ -116,43 +115,58 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<ApiError | null>(null);
   const requestInFlight = useRef(false);
+  const refreshPending = useRef(false);
 
-  const load = useCallback(async (pull = false, background = false) => {
-    if (requestInFlight.current) return;
+  const load = useCallback(async (pull = false, background = false, queue = false) => {
+    if (requestInFlight.current) {
+      if (queue) refreshPending.current = true;
+      return;
+    }
     requestInFlight.current = true;
     if (pull) setRefreshing(true); else if (!background) setLoading(true);
-    setError(null);
     try {
-      const dashboardResult = await getDashboard();
-      setDashboard(dashboardResult);
-      if (dashboardResult.current_round?.state === 'voting') {
+      do {
+        refreshPending.current = false;
+        setError(null);
         try {
-          const roundDetail = await getRoundDetail(dashboardResult.current_round.id);
-          setCurrentBallotComplete(roundDetail.ballot.complete);
-        } catch {
-          setCurrentBallotComplete(false);
+          const dashboardResult = await getDashboard();
+          setDashboard(dashboardResult);
+          if (dashboardResult.current_round?.state === 'voting') {
+            try {
+              const roundDetail = await getRoundDetail(dashboardResult.current_round.id);
+              setCurrentBallotComplete(roundDetail.ballot.complete);
+            } catch {
+              setCurrentBallotComplete(false);
+            }
+          } else {
+            setCurrentBallotComplete(false);
+          }
+          try {
+            const archive = await getArchive();
+            const recapSeason = (archive.seasons ?? []).find((season) => season.recap.available && !season.recap.viewed);
+            setUnseenRecap(recapSeason ?? null);
+          } catch {
+            // Archive recap metadata is additive; an older server should not break Home.
+            setUnseenRecap(null);
+          }
+        } catch (cause) {
+          const apiError = cause instanceof ApiError ? cause : ApiError.networkError('Unable to load your QueueUp home.');
+          if (apiError.statusCode === 401) await refreshSession();
+          else setError(apiError);
         }
-      } else {
-        setCurrentBallotComplete(false);
-      }
-      try {
-        const archive = await getArchive();
-        const recapSeason = (archive.seasons ?? []).find((season) => season.recap.available && !season.recap.viewed);
-        setUnseenRecap(recapSeason ?? null);
-      } catch {
-        // Archive recap metadata is additive; an older server should not break Home.
-        setUnseenRecap(null);
-      }
-    } catch (cause) {
-      const apiError = cause instanceof ApiError ? cause : ApiError.networkError('Unable to load your QueueUp home.');
-      if (apiError.statusCode === 401) await refreshSession();
-      else setError(apiError);
+      } while (refreshPending.current);
     } finally {
       requestInFlight.current = false;
-    if (!background) setLoading(false);
+      if (!background) setLoading(false);
       setRefreshing(false);
     }
   }, [refreshSession]);
+
+  const refreshAtDeadline = useCallback(() => { void load(false, true, true); }, [load]);
+  const now = useCountdownRefresh([
+    roundCountdownTarget(dashboard?.current_round),
+    ...(dashboard?.countdowns ?? []).filter((countdown) => countdown.state === 'counting_down').map((countdown) => countdown.target_at),
+  ], refreshAtDeadline);
 
   useLiveRefresh(() => load(false, true), 20000);
 
@@ -168,7 +182,7 @@ export default function HomeScreen() {
 
   const current = dashboard?.current_round;
   const results = dashboard?.results_round;
-  return <View style={styles.screen}><PlayerHeader /><ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl colors={[colors.brand]} onRefresh={() => void load(true)} refreshing={refreshing} tintColor={colors.brand} />} style={styles.scroll}>{error ? <Text style={styles.muted}>Some updates may be unavailable. Pull to try again.</Text> : null}{dashboard?.countdowns?.length ? <HomepageCountdowns countdowns={dashboard.countdowns} onReachedZero={() => void load(false, true)} /> : null}{unseenRecap ? <RecapBanner onPress={() => router.push(`/season/${unseenRecap.id}/recap` as never)} season={unseenRecap} /> : null}{current ? <><Text style={styles.section}>Current round</Text><RoundCard ballotComplete={currentBallotComplete} round={current} submission={dashboard?.my_submission ?? null} /></> : null}{results ? <><Text style={styles.section}>Recent results</Text><RoundCard isResults round={results} submission={null} /></> : null}{!current && !results ? <View style={styles.empty}><Text style={styles.title}>No round yet</Text><Text style={styles.body}>There isn’t a current or recently revealed round to show.</Text></View> : null}</ScrollView></View>;
+  return <View style={styles.screen}><PlayerHeader /><ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl colors={[colors.brand]} onRefresh={() => void load(true)} refreshing={refreshing} tintColor={colors.brand} />} style={styles.scroll}>{error ? <Text style={styles.muted}>Some updates may be unavailable. Pull to try again.</Text> : null}{dashboard?.countdowns?.length ? <HomepageCountdowns countdowns={dashboard.countdowns} now={now} /> : null}{unseenRecap ? <RecapBanner onPress={() => router.push(`/season/${unseenRecap.id}/recap` as never)} season={unseenRecap} /> : null}{current ? <><Text style={styles.section}>Current round</Text><RoundCard now={now} ballotComplete={currentBallotComplete} round={current} submission={dashboard?.my_submission ?? null} /></> : null}{results ? <><Text style={styles.section}>Recent results</Text><RoundCard now={now} isResults round={results} submission={null} /></> : null}{!current && !results ? <View style={styles.empty}><Text style={styles.title}>No round yet</Text><Text style={styles.body}>There isn’t a current or recently revealed round to show.</Text></View> : null}</ScrollView></View>;
 }
 
 const styles = StyleSheet.create({
