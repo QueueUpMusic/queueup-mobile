@@ -31,6 +31,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const [onboarding, setOnboarding] = useState<OnboardingResponse | null>(null);
   const [error, setError] = useState<ApiError | null>(null);
   const authGeneration = useRef(0);
+  const logoutInFlight = useRef(false);
   const pendingPollInFlight = useRef(false);
 
   const applySession = useCallback((session: SessionResponse) => {
@@ -41,6 +42,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
   }, []);
 
   const refresh = useCallback(async ({ silent = false }: { silent?: boolean } = {}) => {
+    if (logoutInFlight.current) return;
     const generation = authGeneration.current;
     if (!silent) setError(null);
     try {
@@ -56,6 +58,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
         setStatus('logged_out');
       } else if (!silent) {
         const networkState = await Network.getNetworkStateAsync().catch(() => null);
+        if (generation !== authGeneration.current) return;
         setError(networkState?.isConnected === false || networkState?.isInternetReachable === false ? ApiError.offlineError() : apiError);
         setStatus('network_error');
       }
@@ -133,15 +136,23 @@ export function AuthProvider({ children }: PropsWithChildren) {
   }, [applySession]);
 
   const logout = useCallback(async () => {
+    if (logoutInFlight.current) throw new Error('Sign out already in progress');
+    logoutInFlight.current = true;
     authGeneration.current += 1;
-    await unregisterNativePush();
-    await getCsrfToken();
-    await apiLogout();
-    clearCsrfToken();
-    setUser(null);
-    setProfilePictureUrl(null);
-    setOnboarding(null);
-    setStatus('logged_out');
+    try {
+      await unregisterNativePush();
+      await getCsrfToken();
+      await apiLogout();
+      clearCsrfToken();
+      setUser(null);
+      setProfilePictureUrl(null);
+      setOnboarding(null);
+      setError(null);
+      setStatus('logged_out');
+    } finally {
+      authGeneration.current += 1;
+      logoutInFlight.current = false;
+    }
   }, []);
 
   const refreshProfilePicture = useCallback(async () => {
